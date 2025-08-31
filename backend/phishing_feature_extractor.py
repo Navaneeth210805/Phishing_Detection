@@ -90,14 +90,20 @@ class PhishingFeatureExtractor:
             features['special_char_ratio'] = self._calculate_special_char_ratio(domain)
             features['entropy'] = self._calculate_entropy(domain)
             
-            # HTTPS usage - check original URL first, then test HTTPS support
+            # HTTPS usage - improved detection logic
             if original_url.startswith('https://'):
                 features['uses_https'] = 1
+                print(f"DEBUG: Domain {domain} uses HTTPS (from URL)")
             elif original_url.startswith('http://'):
-                features['uses_https'] = 0
+                # Explicitly HTTP, check if HTTPS is also available
+                https_support = self._test_https_support(domain)
+                features['uses_https'] = https_support
+                print(f"DEBUG: Domain {domain} HTTP URL, HTTPS support: {https_support}")
             else:
                 # For bare domains, test if they support HTTPS
-                features['uses_https'] = self._test_https_support(domain)
+                https_support = self._test_https_support(domain)
+                features['uses_https'] = https_support
+                print(f"DEBUG: Domain {domain} bare domain, HTTPS support: {https_support}")
             
         except Exception as e:
             print(f"Error extracting URL features: {e}")
@@ -107,20 +113,56 @@ class PhishingFeatureExtractor:
         return features
     
     def _test_https_support(self, domain: str) -> int:
-        """Test if a domain supports HTTPS."""
+        """Test if a domain supports HTTPS with proper SSL verification."""
         try:
             import ssl
             import socket
+            import requests
             
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
+            # Method 1: Try HTTPS request
+            try:
+                response = requests.get(f'https://{domain}', timeout=10, verify=True)
+                if response.status_code < 400:
+                    print(f"DEBUG: {domain} - HTTPS works via HTTP request")
+                    return 1
+            except requests.exceptions.SSLError:
+                print(f"DEBUG: {domain} - SSL Error in HTTPS request")
+                return 0
+            except requests.exceptions.ConnectionError:
+                print(f"DEBUG: {domain} - Connection error for HTTPS")
+                return 0
+            except Exception as e:
+                print(f"DEBUG: {domain} - HTTPS request failed: {e}")
+                # Continue to socket test
             
-            with socket.create_connection((domain, 443), timeout=5) as sock:
-                with context.wrap_socket(sock, server_hostname=domain) as ssock:
-                    return 1  # HTTPS supported
-        except:
-            return 0  # HTTPS not supported or failed
+            # Method 2: Socket connection test with SSL
+            try:
+                context = ssl.create_default_context()
+                context.check_hostname = True
+                context.verify_mode = ssl.CERT_REQUIRED
+                
+                with socket.create_connection((domain, 443), timeout=5) as sock:
+                    with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                        cert = ssock.getpeercert()
+                        if cert:
+                            print(f"DEBUG: {domain} - Valid SSL certificate found")
+                            return 1
+                        else:
+                            print(f"DEBUG: {domain} - No valid SSL certificate")
+                            return 0
+            except ssl.SSLError as e:
+                print(f"DEBUG: {domain} - SSL error: {e}")
+                return 0
+            except socket.gaierror as e:
+                print(f"DEBUG: {domain} - DNS resolution failed: {e}")
+                return 0
+            except Exception as e:
+                print(f"DEBUG: {domain} - Socket connection failed: {e}")
+                return 0
+                
+        except Exception as e:
+            print(f"DEBUG: {domain} - HTTPS test completely failed: {e}")
+            return 0
     
     def extract_domain_features(self, domain: str) -> Dict[str, Any]:
         """Extract domain-based features using WHOIS and DNS."""

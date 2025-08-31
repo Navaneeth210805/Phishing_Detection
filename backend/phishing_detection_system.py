@@ -339,14 +339,20 @@ class PhishingDetectionSystem:
                         f"SSL={features.get('domain_has_ssl')}, "
                         f"New domain={features.get('domain_is_new_domain')}")
         
-        # Check HTTPS usage (improved detection)
+        # Check HTTPS usage (improved detection and reasoning)
         https_status = features.get('url_uses_https', 0)
         ssl_cert = features.get('domain_has_ssl', 0)
-        if not https_status and not ssl_cert:
+        
+        # Only add reasoning based on actual HTTPS support
+        if https_status == 1:
+            reasons.append("Uses HTTPS encryption")
+        elif https_status == 0:
             score += 0.2
             reasons.append("Does not use HTTPS")
-        elif https_status:
-            reasons.append("Uses HTTPS encryption")
+        
+        # Additional SSL certificate check
+        if not ssl_cert and https_status == 0:
+            score += 0.1  # Additional penalty for no SSL at all
         
         # Check domain age with better thresholds
         domain_age = features.get('domain_age_days', 365)
