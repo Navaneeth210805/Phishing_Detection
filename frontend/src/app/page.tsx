@@ -39,6 +39,18 @@ export default function Dashboard() {
   const [classificationResult, setClassificationResult] = useState<DomainClassification | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
 
+  // Clean domain input as user types
+  const handleDomainInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Real-time cleaning
+    value = value.replace(/^https?:\/\//, ''); // Remove protocols
+    value = value.replace(/\/.*$/, ''); // Remove paths
+    value = value.replace(/^www\./, ''); // Remove www prefix
+    
+    setDomainInput(value);
+  };
+
   // Load initial data
   useEffect(() => {
     loadDashboardData();
@@ -92,6 +104,9 @@ export default function Dashboard() {
       cleanDomain = cleanDomain.replace(/^https?:\/\//, ''); // Remove http:// or https://
       cleanDomain = cleanDomain.replace(/\/.*$/, ''); // Remove path and everything after
       cleanDomain = cleanDomain.replace(/^www\./, ''); // Remove www. prefix
+      
+      // Update the input field with the clean domain
+      setDomainInput(cleanDomain);
       
       const response = await apiClient.classifyDomain(
         cleanDomain,
@@ -250,9 +265,9 @@ export default function Dashboard() {
                   <Label htmlFor="domain">Domain</Label>
                   <Input
                     id="domain"
-                    placeholder="example.com (without http://)"
+                    placeholder="sbi.co.in (domain only, no http/https)"
                     value={domainInput}
-                    onChange={(e) => setDomainInput(e.target.value)}
+                    onChange={handleDomainInputChange}
                     className="cursor-text"
                   />
                   <p className="text-xs text-muted-foreground mt-1">

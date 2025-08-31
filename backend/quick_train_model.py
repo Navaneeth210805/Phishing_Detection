@@ -108,6 +108,16 @@ def train_model():
     # Split the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
+    # Scale the features
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # Label encoder for consistent prediction labels
+    label_encoder = LabelEncoder()
+    label_encoder.fit(['Legitimate', 'Suspected', 'Phishing'])
+    
     # Train Random Forest model
     print("🤖 Training Random Forest model...")
     model = RandomForestClassifier(
@@ -117,24 +127,35 @@ def train_model():
         class_weight='balanced'
     )
     
-    model.fit(X_train, y_train)
+    model.fit(X_train_scaled, y_train)
     
     # Evaluate the model
-    train_score = model.score(X_train, y_train)
-    test_score = model.score(X_test, y_test)
-    y_pred = model.predict(X_test)
+    train_score = model.score(X_train_scaled, y_train)
+    test_score = model.score(X_test_scaled, y_test)
+    y_pred = model.predict(X_test_scaled)
     
     print(f"✅ Training accuracy: {train_score:.3f}")
     print(f"✅ Testing accuracy: {test_score:.3f}")
     print("\n📈 Classification Report:")
     print(classification_report(y_test, y_pred, target_names=['Legitimate', 'Suspected', 'Phishing']))
     
+    # Package model data in expected format
+    model_data = {
+        'model': model,
+        'scaler': scaler,
+        'label_encoder': label_encoder,
+        'model_name': 'RandomForestClassifier',
+        'feature_names': feature_columns,
+        'training_date': datetime.now().isoformat(),
+        'test_accuracy': float(test_score)
+    }
+    
     # Save the model
     model_path = 'phishing_detection_model.pkl'
-    joblib.dump(model, model_path)
+    joblib.dump(model_data, model_path)
     print(f"💾 Model saved to: {model_path}")
     
-    # Save feature names
+    # Save feature info
     feature_info = {
         'feature_names': feature_columns,
         'feature_count': len(feature_columns),
@@ -149,7 +170,7 @@ def train_model():
         json.dump(feature_info, f, indent=2)
     
     print("✅ Model training completed successfully!")
-    return model, feature_info
+    return model_data, feature_info
 
 if __name__ == "__main__":
     try:

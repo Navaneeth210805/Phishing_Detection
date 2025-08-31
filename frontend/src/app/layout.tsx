@@ -45,7 +45,7 @@ export default function RootLayout({
         </main>
         <footer className="border-t py-6 px-6">
           <div className="container mx-auto text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Phishing Detection System. Built for CSE protection and monitoring.</p>
+            <p>Phishing Detection System - Built for CSE protection and monitoring.</p>
           </div>
         </footer>
       </body>
