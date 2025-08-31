@@ -41,8 +41,9 @@ class PhishingFeatureExtractor:
         self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         
     def extract_url_features(self, url: str) -> Dict[str, Any]:
-        """Extract URL-based features."""
+        """Extract URL-based features.""" 
         features = {}
+        original_url = url  # Store original URL
         
         try:
             # Ensure URL has protocol
@@ -89,8 +90,14 @@ class PhishingFeatureExtractor:
             features['special_char_ratio'] = self._calculate_special_char_ratio(domain)
             features['entropy'] = self._calculate_entropy(domain)
             
-            # HTTPS usage
-            features['uses_https'] = 1 if parsed.scheme == 'https' else 0
+            # HTTPS usage - check original URL first, then test HTTPS support
+            if original_url.startswith('https://'):
+                features['uses_https'] = 1
+            elif original_url.startswith('http://'):
+                features['uses_https'] = 0
+            else:
+                # For bare domains, test if they support HTTPS
+                features['uses_https'] = self._test_https_support(domain)
             
         except Exception as e:
             print(f"Error extracting URL features: {e}")
@@ -98,6 +105,22 @@ class PhishingFeatureExtractor:
             features.update(self._get_default_url_features())
             
         return features
+    
+    def _test_https_support(self, domain: str) -> int:
+        """Test if a domain supports HTTPS."""
+        try:
+            import ssl
+            import socket
+            
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
+            with socket.create_connection((domain, 443), timeout=5) as sock:
+                with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                    return 1  # HTTPS supported
+        except:
+            return 0  # HTTPS not supported or failed
     
     def extract_domain_features(self, domain: str) -> Dict[str, Any]:
         """Extract domain-based features using WHOIS and DNS."""
@@ -131,11 +154,27 @@ class PhishingFeatureExtractor:
         features = {}
         
         try:
-            # Ensure URL has protocol
+            # Try HTTPS first, then HTTP
+            original_url = url
             if not url.startswith(('http://', 'https://')):
-                url = 'http://' + url
+                # Try HTTPS first for better security detection
+                url = 'https://' + url
                 
             headers = {'User-Agent': self.user_agent}
+            
+            # First try with the URL as provided or with HTTPS
+            try:
+                response = requests.get(url, headers=headers, timeout=self.timeout, verify=False)
+            except:
+                # If HTTPS fails and we added it, try HTTP
+                if url.startswith('https://') and not original_url.startswith(('http://', 'https://')):
+                    url = 'http://' + original_url
+                    response = requests.get(url, headers=headers, timeout=self.timeout, verify=False)
+                else:
+                    raise
+            
+            # Record the actual protocol used
+            features['actual_protocol'] = 'https' if url.startswith('https://') else 'http'
             response = requests.get(url, headers=headers, timeout=self.timeout, verify=False)
             
             if response.status_code == 200:

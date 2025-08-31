@@ -19,10 +19,10 @@ import os
 import sys
 
 def generate_sample_training_data(n_samples=1000):
-    """Generate sample training data for phishing detection."""
+    """Generate sample training data for phishing detection using real feature names."""
     np.random.seed(42)
     
-    # Generate features similar to what the feature extractor produces
+    # Generate features matching what the feature extractor produces
     features = []
     labels = []
     
@@ -30,51 +30,186 @@ def generate_sample_training_data(n_samples=1000):
         # Legitimate domains (60% of data)
         if i < n_samples * 0.6:
             feature_vector = {
-                'url_length': np.random.normal(25, 8),  # Shorter URLs
-                'subdomain_count': np.random.poisson(1),  # Fewer subdomains
-                'suspicious_chars': np.random.poisson(0.5),  # Very few suspicious chars
-                'domain_age': np.random.normal(2000, 500),  # Older domains
-                'ssl_certificate': 1,  # Usually have SSL
-                'whois_privacy': 0,  # Usually not private
-                'redirect_count': 0,  # Usually no redirects
-                'external_links': np.random.normal(10, 5),  # Moderate external links
-                'form_count': np.random.poisson(1),  # Few forms
-                'has_login_form': np.random.choice([0, 1], p=[0.7, 0.3]),  # Sometimes login
-                'similarity_score': np.random.normal(0.1, 0.05)  # Low similarity to known sites
+                # URL features (with url_ prefix)
+                'url_length': np.random.normal(25, 8),
+                'url_domain_length': np.random.normal(12, 4),
+                'url_path_length': np.random.normal(5, 3),
+                'url_query_length': np.random.normal(0, 2),
+                'url_has_ip_address': 0,
+                'url_has_suspicious_tld': 0,
+                'url_subdomain_count': np.random.poisson(1),
+                'url_dash_count': np.random.poisson(0.5),
+                'url_dot_count': np.random.poisson(2),
+                'url_slash_count': np.random.poisson(2),
+                'url_at_symbol': 0,
+                'url_double_slash_redirecting': 0,
+                'url_has_suspicious_keywords': 0,
+                'url_has_url_shortening': 0,
+                'url_has_suspicious_port': 0,
+                'url_digit_ratio': np.random.normal(0.1, 0.05),
+                'url_special_char_ratio': np.random.normal(0.1, 0.05),
+                'url_entropy': np.random.normal(3.5, 0.5),
+                'url_uses_https': np.random.choice([0, 1], p=[0.3, 0.7]),
+                
+                # Domain features (with domain_ prefix)
+                'domain_age_days': np.random.normal(2000, 500),
+                'domain_is_new_domain': 0,
+                'domain_days_to_expire': np.random.normal(365, 100),
+                'domain_expires_soon': 0,
+                'domain_has_registrar': 1,
+                'domain_has_registrant': 1,
+                'domain_a_record_count': np.random.poisson(3),
+                'domain_dns_resolves': 1,
+                'domain_has_ssl': 1,
+                'domain_ssl_days_to_expire': np.random.normal(90, 30),
+                'domain_ssl_expires_soon': 0,
+                
+                # Content features (with content_ prefix)
+                'content_status_code': 200,
+                'content_length': np.random.normal(50000, 20000),
+                'content_has_title': 1,
+                'content_title_length': np.random.normal(50, 20),
+                'content_form_count': np.random.poisson(1),
+                'content_has_password_field': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'content_has_hidden_fields': np.random.choice([0, 1], p=[0.5, 0.5]),
+                'content_total_links': np.random.normal(50, 20),
+                'content_external_links': np.random.normal(10, 5),
+                'content_image_count': np.random.normal(20, 10),
+                'content_external_images': np.random.normal(2, 2),
+                'content_script_count': np.random.normal(5, 3),
+                'content_has_external_scripts': np.random.choice([0, 1], p=[0.3, 0.7]),
+                'content_has_suspicious_content': 0,
+                'content_has_copyright': 1,
+                'content_redirect_count': 0,
+                'content_has_sitemap': np.random.choice([0, 1], p=[0.5, 0.5]),
+                'content_sitemap_url_count': np.random.poisson(2),
+                'content_sitemap_structure_complexity': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'content_has_sitemap_index': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'content_sitemap_last_modified': np.random.choice([0, 1], p=[0.6, 0.4])
             }
             label = 0  # Legitimate
             
         # Suspected phishing (25% of data)
         elif i < n_samples * 0.85:
             feature_vector = {
-                'url_length': np.random.normal(40, 10),  # Medium length URLs
-                'subdomain_count': np.random.poisson(2),  # More subdomains
-                'suspicious_chars': np.random.poisson(2),  # Some suspicious chars
-                'domain_age': np.random.normal(100, 200),  # Newer domains
-                'ssl_certificate': np.random.choice([0, 1], p=[0.4, 0.6]),  # Sometimes SSL
-                'whois_privacy': np.random.choice([0, 1], p=[0.3, 0.7]),  # Often private
-                'redirect_count': np.random.poisson(1),  # Some redirects
-                'external_links': np.random.normal(20, 8),  # More external links
-                'form_count': np.random.poisson(2),  # More forms
-                'has_login_form': np.random.choice([0, 1], p=[0.3, 0.7]),  # Often login
-                'similarity_score': np.random.normal(0.4, 0.1)  # Medium similarity
+                # URL features
+                'url_length': np.random.normal(40, 10),
+                'url_domain_length': np.random.normal(20, 8),
+                'url_path_length': np.random.normal(15, 8),
+                'url_query_length': np.random.normal(5, 5),
+                'url_has_ip_address': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'url_has_suspicious_tld': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'url_subdomain_count': np.random.poisson(2),
+                'url_dash_count': np.random.poisson(2),
+                'url_dot_count': np.random.poisson(4),
+                'url_slash_count': np.random.poisson(4),
+                'url_at_symbol': np.random.choice([0, 1], p=[0.9, 0.1]),
+                'url_double_slash_redirecting': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'url_has_suspicious_keywords': np.random.choice([0, 1], p=[0.6, 0.4]),
+                'url_has_url_shortening': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'url_has_suspicious_port': np.random.choice([0, 1], p=[0.9, 0.1]),
+                'url_digit_ratio': np.random.normal(0.2, 0.1),
+                'url_special_char_ratio': np.random.normal(0.2, 0.1),
+                'url_entropy': np.random.normal(4.0, 0.5),
+                'url_uses_https': np.random.choice([0, 1], p=[0.4, 0.6]),
+                
+                # Domain features
+                'domain_age_days': np.random.normal(100, 200),
+                'domain_is_new_domain': np.random.choice([0, 1], p=[0.3, 0.7]),
+                'domain_days_to_expire': np.random.normal(180, 100),
+                'domain_expires_soon': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'domain_has_registrar': np.random.choice([0, 1], p=[0.2, 0.8]),
+                'domain_has_registrant': np.random.choice([0, 1], p=[0.3, 0.7]),
+                'domain_a_record_count': np.random.poisson(2),
+                'domain_dns_resolves': 1,
+                'domain_has_ssl': np.random.choice([0, 1], p=[0.4, 0.6]),
+                'domain_ssl_days_to_expire': np.random.normal(60, 30),
+                'domain_ssl_expires_soon': np.random.choice([0, 1], p=[0.6, 0.4]),
+                
+                # Content features
+                'content_status_code': np.random.choice([200, 302, 404], p=[0.7, 0.2, 0.1]),
+                'content_length': np.random.normal(30000, 15000),
+                'content_has_title': 1,
+                'content_title_length': np.random.normal(40, 15),
+                'content_form_count': np.random.poisson(2),
+                'content_has_password_field': np.random.choice([0, 1], p=[0.3, 0.7]),
+                'content_has_hidden_fields': np.random.choice([0, 1], p=[0.2, 0.8]),
+                'content_total_links': np.random.normal(30, 15),
+                'content_external_links': np.random.normal(20, 8),
+                'content_image_count': np.random.normal(15, 8),
+                'content_external_images': np.random.normal(5, 3),
+                'content_script_count': np.random.normal(8, 4),
+                'content_has_external_scripts': np.random.choice([0, 1], p=[0.2, 0.8]),
+                'content_has_suspicious_content': np.random.choice([0, 1], p=[0.6, 0.4]),
+                'content_has_copyright': np.random.choice([0, 1], p=[0.5, 0.5]),
+                'content_redirect_count': np.random.poisson(1),
+                'content_has_sitemap': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'content_sitemap_url_count': np.random.poisson(1),
+                'content_sitemap_structure_complexity': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'content_has_sitemap_index': np.random.choice([0, 1], p=[0.9, 0.1]),
+                'content_sitemap_last_modified': np.random.choice([0, 1], p=[0.7, 0.3])
             }
             label = 1  # Suspected
             
         # Definite phishing (15% of data)
         else:
             feature_vector = {
-                'url_length': np.random.normal(60, 15),  # Long URLs
-                'subdomain_count': np.random.poisson(4),  # Many subdomains
-                'suspicious_chars': np.random.poisson(5),  # Many suspicious chars
-                'domain_age': np.random.normal(30, 50),  # Very new domains
-                'ssl_certificate': np.random.choice([0, 1], p=[0.7, 0.3]),  # Often no SSL
-                'whois_privacy': 1,  # Usually private
-                'redirect_count': np.random.poisson(3),  # Many redirects
-                'external_links': np.random.normal(40, 15),  # Many external links
-                'form_count': np.random.poisson(3),  # Many forms
-                'has_login_form': 1,  # Always has login
-                'similarity_score': np.random.normal(0.8, 0.1)  # High similarity
+                # URL features
+                'url_length': np.random.normal(60, 15),
+                'url_domain_length': np.random.normal(30, 10),
+                'url_path_length': np.random.normal(25, 10),
+                'url_query_length': np.random.normal(10, 8),
+                'url_has_ip_address': np.random.choice([0, 1], p=[0.5, 0.5]),
+                'url_has_suspicious_tld': np.random.choice([0, 1], p=[0.4, 0.6]),
+                'url_subdomain_count': np.random.poisson(4),
+                'url_dash_count': np.random.poisson(5),
+                'url_dot_count': np.random.poisson(6),
+                'url_slash_count': np.random.poisson(6),
+                'url_at_symbol': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'url_double_slash_redirecting': np.random.choice([0, 1], p=[0.6, 0.4]),
+                'url_has_suspicious_keywords': np.random.choice([0, 1], p=[0.2, 0.8]),
+                'url_has_url_shortening': np.random.choice([0, 1], p=[0.6, 0.4]),
+                'url_has_suspicious_port': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'url_digit_ratio': np.random.normal(0.3, 0.1),
+                'url_special_char_ratio': np.random.normal(0.3, 0.1),
+                'url_entropy': np.random.normal(4.5, 0.5),
+                'url_uses_https': np.random.choice([0, 1], p=[0.7, 0.3]),
+                
+                # Domain features
+                'domain_age_days': np.random.normal(30, 50),
+                'domain_is_new_domain': 1,
+                'domain_days_to_expire': np.random.normal(90, 50),
+                'domain_expires_soon': np.random.choice([0, 1], p=[0.4, 0.6]),
+                'domain_has_registrar': np.random.choice([0, 1], p=[0.3, 0.7]),
+                'domain_has_registrant': np.random.choice([0, 1], p=[0.5, 0.5]),
+                'domain_a_record_count': np.random.poisson(1),
+                'domain_dns_resolves': 1,
+                'domain_has_ssl': np.random.choice([0, 1], p=[0.7, 0.3]),
+                'domain_ssl_days_to_expire': np.random.normal(30, 20),
+                'domain_ssl_expires_soon': np.random.choice([0, 1], p=[0.3, 0.7]),
+                
+                # Content features
+                'content_status_code': np.random.choice([200, 302, 403, 404], p=[0.5, 0.3, 0.1, 0.1]),
+                'content_length': np.random.normal(20000, 10000),
+                'content_has_title': np.random.choice([0, 1], p=[0.2, 0.8]),
+                'content_title_length': np.random.normal(30, 10),
+                'content_form_count': np.random.poisson(3),
+                'content_has_password_field': 1,
+                'content_has_hidden_fields': 1,
+                'content_total_links': np.random.normal(20, 10),
+                'content_external_links': np.random.normal(40, 15),
+                'content_image_count': np.random.normal(10, 5),
+                'content_external_images': np.random.normal(8, 4),
+                'content_script_count': np.random.normal(12, 6),
+                'content_has_external_scripts': 1,
+                'content_has_suspicious_content': np.random.choice([0, 1], p=[0.2, 0.8]),
+                'content_has_copyright': np.random.choice([0, 1], p=[0.8, 0.2]),
+                'content_redirect_count': np.random.poisson(3),
+                'content_has_sitemap': np.random.choice([0, 1], p=[0.9, 0.1]),
+                'content_sitemap_url_count': 0,
+                'content_sitemap_structure_complexity': 0,
+                'content_has_sitemap_index': 0,
+                'content_sitemap_last_modified': 0
             }
             label = 2  # Phishing
         

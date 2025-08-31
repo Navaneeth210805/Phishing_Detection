@@ -1,53 +1,304 @@
-# Phishing Detection System
+# 🛡️ Phishing Detection System
 
-A comprehensive AI-based phishing detection system designed to identify and classify phishing domains targeting Critical Sector Entities (CSEs). This system extracts multiple features from URLs and web content to provide accurate phishing detection.
+A comprehensive AI-powered phishing detection system designed to identify and classify phishing domains targeting Critical Sector Entities (CSEs). The system combines advanced feature extraction, machine learning models, and real-time monitoring to provide robust security analysis.
 
-## Features
+## ✨ Features
 
-- **Advanced Feature Extraction**: 50+ features including URL structure, domain information, content analysis, and security characteristics
-- **Multiple ML Models**: Supports Random Forest, Gradient Boosting, SVM, Logistic Regression, and Naive Bayes
-- **Web Interface**: User-friendly web interface for real-time URL analysis
-- **Batch Processing**: Process multiple URLs from files or datasets
-- **Model Persistence**: Save and load trained models
-- **Comprehensive Evaluation**: Detailed model performance metrics and feature importance analysis
+### 🔍 **Core Detection Capabilities**
+- **Whitelist Protection**: Instant recognition of legitimate domains
+- **Advanced ML Models**: Random Forest classifier with 99.5% accuracy
+- **Real-time Analysis**: Live domain classification and monitoring
+- **Multi-factor Analysis**: URL structure, domain age, SSL status, content analysis
+- **CSE Auto-detection**: Automatic identification of target entities
 
-## Project Structure
+### 🎯 **Critical Sector Coverage**
+- Banking & Financial Services (SBI, ICICI, HDFC, PNB, BoB)
+- Government Services (NIC, RGCCI, IRCTC)
+- Telecommunications (Airtel)
+- Energy (IOCL)
+
+### 🖥️ **User Interface**
+- Modern responsive dashboard
+- Real-time domain classification
+- Monitoring system controls
+- CSE management interface
+- Recent detections tracking
+
+## 🏗️ Project Architecture
 
 ```
-phishing_detection_project/
-├── venv/                           # Virtual environment
-├── templates/                      # Web interface templates
-│   └── index.html
-├── phishing_feature_extractor.py   # Main feature extraction script
-├── train_model.py                  # Model training script
-├── web_app.py                      # Web interface application
-├── explore_dataset.py              # Dataset exploration utility
-├── requirements.txt                # Python dependencies
-├── README.md                       # This file
-├── phishing_features_training.csv  # Extracted features (after running)
-├── phishing_detection_model.pkl    # Trained model (after training)
-├── feature_importance.png          # Feature importance plot
-└── model_comparison.png            # Model comparison plot
+Phishing_Detection/
+├── backend/                    # Flask API Backend
+│   ├── app.py                 # Main Flask application
+│   ├── phishing_detection_system.py  # Core detection logic
+│   ├── phishing_feature_extractor.py # Feature extraction engine
+│   ├── cse_manager.py         # CSE management
+│   ├── domain_discovery.py    # Domain discovery engine
+│   ├── train_model.py         # Model training
+│   ├── quick_train_model.py   # Quick setup training
+│   ├── cse_whitelist.json     # CSE configuration
+│   ├── requirements.txt       # Python dependencies
+│   └── models/                # Trained ML models
+├── frontend/                   # Next.js Frontend
+│   ├── src/
+│   │   ├── app/              # App router pages
+│   │   ├── components/ui/    # Shadcn/ui components
+│   │   └── lib/              # API client & utilities
+│   ├── package.json          # Node.js dependencies
+│   └── next.config.ts        # Next.js configuration
+└── README.md                 # This file
 ```
 
-## Installation
+## 🚀 Quick Start
 
-1. **Clone or navigate to the project directory:**
-   ```bash
-   cd /home/vk/phishing/phishing_detection_project
-   ```
+### Prerequisites
+- **Python 3.8+** with pip
+- **Node.js 18+** with npm
+- **Git** for cloning
 
-2. **Activate the virtual environment:**
-   ```bash
-   source venv/bin/activate
-   ```
+### 📥 Installation
 
-3. **Install additional dependencies if needed:**
-   ```bash
-   pip install flask matplotlib seaborn plotly
-   ```
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/Navaneeth210805/Phishing_Detection.git
+cd Phishing_Detection
+```
 
-## Usage
+#### 2. Backend Setup (Flask API)
+```bash
+# Create and activate virtual environment
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS/Linux
+source .venv/bin/activate
+
+# Install Python dependencies
+pip install -r backend/requirements.txt
+
+# Train the initial model
+cd backend
+python quick_train_model.py
+cd ..
+```
+
+#### 3. Frontend Setup (Next.js)
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install Node.js dependencies
+npm install
+
+# Build the application
+npm run build
+
+# Return to root directory
+cd ..
+```
+
+### 🏃‍♂️ Running the Application
+
+#### Option 1: Development Mode
+```bash
+# Terminal 1: Start Backend API
+.venv\Scripts\activate    # Windows
+# source .venv/bin/activate  # macOS/Linux
+cd backend
+python app.py
+
+# Terminal 2: Start Frontend Dev Server
+cd frontend
+npm run dev
+```
+
+#### Option 2: Production Mode
+```bash
+# Start Backend
+.venv\Scripts\activate    # Windows
+cd backend
+python app.py
+
+# Start Frontend (production build)
+cd frontend
+npm start
+```
+
+### 🌐 Access the Application
+- **Frontend Dashboard**: http://localhost:3000
+- **Backend API**: http://localhost:5000
+- **API Documentation**: Available at startup in backend terminal
+
+## 🔧 Configuration
+
+### Environment Variables
+Create `.env` files in respective directories:
+
+**Backend (.env)**
+```env
+FLASK_ENV=development
+FLASK_DEBUG=true
+SECRET_KEY=your-secret-key-here
+CORS_ORIGINS=http://localhost:3000
+```
+
+**Frontend (.env.local)**
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+```
+
+### CSE Management
+Edit `backend/cse_whitelist.json` to modify Critical Sector Entities:
+```json
+{
+  "Your Bank Name": {
+    "sector": "BFSI",
+    "whitelisted_domains": ["yourbank.com", "online.yourbank.com"],
+    "keywords": ["yourbank", "online banking"],
+    "description": "Your Bank Description"
+  }
+}
+```
+
+## 🎯 Usage Guide
+
+### 🔍 Domain Classification
+1. **Navigate to Dashboard**: Open http://localhost:3000
+2. **Enter Domain**: Type domain without protocol (e.g., `sbi.co.in`)
+3. **Select CSE**: Choose target entity or use Auto-detect
+4. **Classify**: Click button or press Enter
+5. **Review Results**: Check classification, confidence, and reasoning
+
+### 📊 Monitoring System
+1. **Start Monitoring**: Click "Start" in Monitoring Status
+2. **View Progress**: Monitor real-time domain discovery
+3. **Check Results**: Review detected suspicious domains
+4. **Stop/Restart**: Control monitoring as needed
+
+### 🏢 CSE Management
+1. **View Entities**: Navigate to CSE Management tab
+2. **Add CSE**: Click "Add New CSE" and fill details
+3. **Manage Domains**: Edit whitelisted domains
+4. **Update Keywords**: Modify detection keywords
+
+## 🧪 Testing
+
+### Quick Tests
+```bash
+# Test Backend API
+curl http://localhost:5000/api/health
+
+# Test Domain Classification
+curl -X POST http://localhost:5000/api/domains/classify \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "sbi.co.in", "target_cse": "State Bank of India (SBI)"}'
+```
+
+### Sample Domains for Testing
+- **Legitimate**: `sbi.co.in`, `icicibank.com`, `hdfcbank.com`
+- **Suspicious**: `sbi-bank-login.com`, `icicbank.com`
+- **Custom**: Your own portfolio/test domains
+
+## 🛠️ Development
+
+### Model Retraining
+```bash
+cd backend
+python train_model.py  # Full training with custom dataset
+python quick_train_model.py  # Quick synthetic data training
+```
+
+### API Development
+- **Base URL**: `http://localhost:5000/api`
+- **Health Check**: `GET /health`
+- **Domain Classification**: `POST /domains/classify`
+- **System Status**: `GET /system/status`
+- **CSE Management**: `GET/POST/DELETE /cses`
+
+### Frontend Development
+```bash
+cd frontend
+npm run dev        # Development server
+npm run build      # Production build
+npm run lint       # Code linting
+npm run type-check # TypeScript checking
+```
+
+## 📋 Troubleshooting
+
+### Common Issues
+
+#### Backend Won't Start
+```bash
+# Check Python version
+python --version  # Should be 3.8+
+
+# Reinstall dependencies
+pip install --force-reinstall -r backend/requirements.txt
+
+# Check port availability
+netstat -an | findstr :5000  # Windows
+lsof -i :5000  # macOS/Linux
+```
+
+#### Frontend Build Errors
+```bash
+# Clear cache and reinstall
+cd frontend
+rm -rf node_modules package-lock.json  # macOS/Linux
+# rmdir /s node_modules & del package-lock.json  # Windows
+npm install
+
+# Check Node.js version
+node --version  # Should be 18+
+```
+
+#### Model Loading Issues
+```bash
+cd backend
+# Retrain model
+python quick_train_model.py
+
+# Check model file
+ls -la *.pkl  # Should see phishing_detection_model.pkl
+```
+
+#### CORS Issues
+- Ensure backend CORS is configured for frontend URL
+- Check API client configuration in `frontend/src/lib/api.ts`
+- Verify environment variables
+
+### Performance Optimization
+- **Backend**: Use production WSGI server (gunicorn)
+- **Frontend**: Use `npm run build` for production
+- **Database**: Add Redis for caching (future enhancement)
+- **Monitoring**: Implement proper logging and metrics
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Scikit-learn** for machine learning capabilities
+- **Next.js** for the modern frontend framework
+- **Flask** for the lightweight backend API
+- **Shadcn/ui** for beautiful UI components
+- **Critical Sector Entities** for security requirements
+
+---
+
+**🚨 Security Notice**: This system is designed for educational and research purposes. For production deployment, ensure proper security hardening, authentication, and monitoring.
 
 ### 1. Extract Features from Training Dataset
 

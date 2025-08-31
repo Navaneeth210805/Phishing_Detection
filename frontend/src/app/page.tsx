@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -35,7 +36,7 @@ export default function Dashboard() {
   
   // Domain classification form
   const [domainInput, setDomainInput] = useState('');
-  const [selectedCSE, setSelectedCSE] = useState('');
+  const [selectedCSE, setSelectedCSE] = useState('auto-detect');
   const [classificationResult, setClassificationResult] = useState<DomainClassification | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
 
@@ -49,6 +50,13 @@ export default function Dashboard() {
     value = value.replace(/^www\./, ''); // Remove www prefix
     
     setDomainInput(value);
+  };
+
+  // Handle Enter key press for classification
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isClassifying && domainInput.trim()) {
+      handleDomainClassification();
+    }
   };
 
   // Load initial data
@@ -110,7 +118,7 @@ export default function Dashboard() {
       
       const response = await apiClient.classifyDomain(
         cleanDomain,
-        selectedCSE || undefined
+        selectedCSE === 'auto-detect' ? undefined : selectedCSE
       );
       
       if (isApiResponseSuccess(response)) {
@@ -259,44 +267,49 @@ export default function Dashboard() {
                 Enter a domain to check if it&apos;s potentially phishing a CSE
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex space-x-4">
-                <div className="flex-1">
-                  <Label htmlFor="domain">Domain</Label>
-                  <Input
-                    id="domain"
-                    placeholder="sbi.co.in (domain only, no http/https)"
-                    value={domainInput}
-                    onChange={handleDomainInputChange}
-                    className="cursor-text"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Enter domain without protocol (http/https) - e.g., &quot;sbi.co.in&quot; not &quot;https://sbi.co.in&quot;
-                  </p>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="domain">Domain</Label>
+                    <Input
+                      id="domain"
+                      placeholder="e.g., sbi.co.in"
+                      value={domainInput}
+                      onChange={handleDomainInputChange}
+                      onKeyPress={handleKeyPress}
+                      className="cursor-text"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter domain without protocol • Press Enter to classify
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cse">Target CSE (Optional)</Label>
+                    <Select value={selectedCSE} onValueChange={setSelectedCSE}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Auto-detect" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto-detect">Auto-detect</SelectItem>
+                        {Object.keys(cses).map((cseName) => (
+                          <SelectItem key={cseName} value={cseName}>
+                            {cseName}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="other">Other (Custom Entity)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="w-64">
-                  <Label htmlFor="cse">Target CSE (Optional)</Label>
-                  <select
-                    id="cse"
-                    className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md cursor-pointer"
-                    value={selectedCSE}
-                    onChange={(e) => setSelectedCSE(e.target.value)}
-                  >
-                    <option value="">Auto-detect</option>
-                    {Object.keys(cses).map((cseName) => (
-                      <option key={cseName} value={cseName}>
-                        {cseName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end">
+                <div className="flex justify-center">
                   <Button
                     onClick={handleDomainClassification}
                     disabled={isClassifying || !domainInput.trim()}
-                    className="cursor-pointer disabled:cursor-not-allowed"
+                    className="px-8 py-2 font-medium min-w-[200px]"
+                    size="lg"
                   >
-                    {isClassifying ? 'Classifying...' : 'Classify'}
+                    {isClassifying ? 'Classifying...' : 'Classify Domain'}
                   </Button>
                 </div>
               </div>

@@ -185,6 +185,11 @@ class PhishingDetectionSystem:
     def classify_domain(self, domain: str, target_cse: str = None) -> Dict:
         """Classify a domain as Phishing, Suspected, or Legitimate."""
         try:
+            # First check if domain is whitelisted
+            whitelist_check = self._check_whitelist(domain, target_cse)
+            if whitelist_check:
+                return whitelist_check
+            
             # Extract features using existing extractor
             features = self.feature_extractor.extract_all_features(domain)
             
@@ -271,15 +276,89 @@ class PhishingDetectionSystem:
             self.logger.error(f"Error in ML prediction: {e}")
             return None
     
+    def _check_whitelist(self, domain: str, target_cse: str = None) -> Dict:
+        """Check if domain is whitelisted for any CSE."""
+        # Clean domain
+        if '://' in domain:
+            domain = domain.split('://')[1]
+        domain = domain.split('/')[0].lower()
+        
+        all_cses = self.cse_manager.get_all_cses()
+        
+        # Check specific CSE first if provided
+        if target_cse and target_cse in all_cses:
+            cse_data = all_cses[target_cse]
+            for whitelisted in cse_data.get('whitelisted_domains', []):
+                if domain == whitelisted.lower() or domain.endswith('.' + whitelisted.lower()):
+                    return {
+                        'classification': {
+                            'classification': 'Legitimate',
+                            'confidence': 1.0,
+                            'risk_score': 0.0,
+                            'reasoning': [f'Domain is whitelisted for {target_cse}']
+                        },
+                        'target_cse': target_cse,
+                        'domain': domain,
+                        'timestamp': datetime.now().isoformat(),
+                        'evidence': {
+                            'whitelisted': True,
+                            'whitelisted_for': target_cse
+                        }
+                    }
+        
+        # Check all CSEs for whitelist
+        for cse_name, cse_data in all_cses.items():
+            for whitelisted in cse_data.get('whitelisted_domains', []):
+                if domain == whitelisted.lower() or domain.endswith('.' + whitelisted.lower()):
+                    return {
+                        'classification': {
+                            'classification': 'Legitimate',
+                            'confidence': 1.0,
+                            'risk_score': 0.0,
+                            'reasoning': [f'Domain is whitelisted for {cse_name}']
+                        },
+                        'target_cse': cse_name,
+                        'domain': domain,
+                        'timestamp': datetime.now().isoformat(),
+                        'evidence': {
+                            'whitelisted': True,
+                            'whitelisted_for': cse_name
+                        }
+                    }
+        
+        return None  # Not whitelisted
+    
     def _rule_based_classification(self, features: Dict, target_cse: str) -> Dict:
-        """Rule-based classification as fallback."""
+        """Rule-based classification with improved reasoning."""
         score = 0
         reasons = []
         
-        # Check similarity to target CSE
-        if features.get('cse_similarity_score', 0) > 0.7:
-            score += 0.4
-            reasons.append("High similarity to target CSE")
+        # Debug: Log some key features
+        self.logger.info(f"Features for reasoning: HTTPS={features.get('url_uses_https')}, "
+                        f"Domain age={features.get('domain_age_days')}, "
+                        f"SSL={features.get('domain_has_ssl')}, "
+                        f"New domain={features.get('domain_is_new_domain')}")
+        
+        # Check HTTPS usage (improved detection)
+        https_status = features.get('url_uses_https', 0)
+        ssl_cert = features.get('domain_has_ssl', 0)
+        if not https_status and not ssl_cert:
+            score += 0.2
+            reasons.append("Does not use HTTPS")
+        elif https_status:
+            reasons.append("Uses HTTPS encryption")
+        
+        # Check domain age with better thresholds
+        domain_age = features.get('domain_age_days', 365)
+        is_new = features.get('domain_is_new_domain', 0)
+        if domain_age < 30 or is_new:
+            score += 0.3
+            reasons.append("Very new domain")
+        elif domain_age < 90:
+            score += 0.15
+            reasons.append("Recently registered domain")
+        elif domain_age > 1000:
+            reasons.append("Well-established domain")
         
         # Check suspicious indicators
         if features.get('url_has_suspicious_keywords', 0):
@@ -287,30 +366,66 @@ class PhishingDetectionSystem:
             reasons.append("Contains suspicious keywords")
         
         if features.get('url_has_ip_address', 0):
-            score += 0.3
+            score += 0.4
             reasons.append("Uses IP address instead of domain")
         
-        if not features.get('url_uses_https', 0):
+        # Check registrar and WHOIS privacy
+        has_registrar = features.get('domain_has_registrar', 1)
+        if not has_registrar:
             score += 0.2
-            reasons.append("Does not use HTTPS")
+            reasons.append("Missing registrar information")
         
-        if features.get('domain_domain_age_days', 365) < 30:
-            score += 0.3
-            reasons.append("Very new domain")
+        # Check SSL certificate status
+        ssl_expires_soon = features.get('domain_ssl_expires_soon', 0)
+        if ssl_expires_soon:
+            score += 0.1
+            reasons.append("SSL certificate expires soon")
         
-        # Classify based on score
-        if score >= 0.7:
+        # Check content-based features
+        status_code = features.get('content_status_code', 200)
+        if status_code == 403 or status_code == 404:
+            score += 0.2
+            reasons.append(f"Suspicious HTTP status: {status_code}")
+        
+        suspicious_content = features.get('content_has_suspicious_content', 0)
+        if suspicious_content:
+            score += 0.25
+            reasons.append("Contains suspicious content patterns")
+        
+        password_field = features.get('content_has_password_field', 0)
+        hidden_fields = features.get('content_has_hidden_fields', 0)
+        if password_field and hidden_fields:
+            score += 0.2
+            reasons.append("Has login form with hidden fields")
+        
+        # Check similarity to target CSE (if available)
+        if features.get('cse_similarity_score', 0) > 0.7:
+            score += 0.4
+            reasons.append("High similarity to target CSE")
+        
+        # Check similarity to target CSE (if available)
+        if features.get('cse_similarity_score', 0) > 0.7:
+            score += 0.4
+            reasons.append("High similarity to target CSE")
+        
+        # Improve classification thresholds for better sensitivity
+        if score >= 0.8:
             classification = "Phishing"
-        elif score >= 0.4:
+        elif score >= 0.5:
             classification = "Suspected"
+        elif score >= 0.3:
+            classification = "Potentially Suspicious"
         else:
             classification = "Legitimate"
         
+        # Calculate confidence based on number of indicators
+        confidence = min(0.95, 0.5 + (len(reasons) * 0.1) + (score * 0.3))
+        
         return {
             'classification': classification,
-            'confidence': min(score, 1.0),
-            'reasoning': reasons,
-            'risk_score': score
+            'confidence': confidence,
+            'risk_score': score,
+            'reasoning': reasons
         }
     
     def _collect_evidence(self, domain: str, features: Dict, target_cse: str) -> Dict:

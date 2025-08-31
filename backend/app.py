@@ -200,7 +200,15 @@ def classify_domain():
         if not domain:
             return jsonify({'error': 'Domain is required'}), 400
         
+        # Auto-detect CSE if not provided or if auto-detect is requested
+        if not target_cse or target_cse == "auto-detect":
+            target_cse = auto_detect_cse(domain)
+        
         result = detection_system.classify_domain(domain, target_cse)
+        
+        # Add auto-detected CSE info to response
+        if result:
+            result['auto_detected_cse'] = target_cse
         
         return jsonify({
             'success': True,
@@ -210,6 +218,56 @@ def classify_domain():
     except Exception as e:
         logger.error(f"Error classifying domain: {e}")
         return jsonify({'error': str(e)}), 500
+
+def auto_detect_cse(domain):
+    """Auto-detect the most likely CSE for a given domain."""
+    try:
+        # Clean domain
+        if '://' in domain:
+            domain = domain.split('://')[1]
+        domain = domain.split('/')[0].lower()
+        
+        all_cses = detection_system.get_cse_list()
+        best_match = None
+        best_score = 0
+        
+        for cse_name, cse_data in all_cses.items():
+            score = 0
+            
+            # Check if domain matches whitelisted domains
+            for whitelisted in cse_data.get('whitelisted_domains', []):
+                if domain == whitelisted.lower():
+                    return cse_name  # Perfect match
+                if whitelisted.lower() in domain or domain in whitelisted.lower():
+                    score += 0.8
+            
+            # Check keywords
+            for keyword in cse_data.get('keywords', []):
+                if keyword.lower() in domain:
+                    score += 0.3
+                    
+            # Domain similarity scoring
+            for whitelisted in cse_data.get('whitelisted_domains', []):
+                # Check for similar patterns
+                domain_parts = domain.split('.')
+                whitelist_parts = whitelisted.lower().split('.')
+                
+                for d_part in domain_parts:
+                    for w_part in whitelist_parts:
+                        if len(d_part) > 3 and len(w_part) > 3:
+                            if d_part in w_part or w_part in d_part:
+                                score += 0.2
+            
+            if score > best_score:
+                best_score = score
+                best_match = cse_name
+        
+        # Return best match if score is high enough, otherwise return None for "Other"
+        return best_match if best_score > 0.3 else None
+        
+    except Exception as e:
+        logger.error(f"Error in auto-detection: {e}")
+        return None
 
 @app.route('/api/domains/discover', methods=['POST'])
 def discover_domains():
