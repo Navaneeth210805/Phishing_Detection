@@ -1,0 +1,568 @@
+PHISHING URL DISTRIBUTION ANALYSIS REPORT
+==================================================
+
+Generated: 2025-09-23 13:07:59
+Total Features Analyzed: 52
+
+DISTRIBUTION TYPES SUMMARY:
+------------------------------
+CONTINUOUS: 7 features
+  - url_length
+  - domain_length
+  - path_length
+  - digit_ratio
+  - special_char_ratio
+  ... and 2 more
+
+BINARY: 40 features
+  - query_length
+  - has_ip_address
+  - has_suspicious_tld
+  - at_symbol
+  - double_slash_redirecting
+  ... and 35 more
+
+DISCRETE: 5 features
+  - subdomain_count
+  - dash_count
+  - dot_count
+  - slash_count
+  - a_record_count
+
+
+DETAILED FEATURE ANALYSIS:
+------------------------------
+
+Feature: url_length
+Type: continuous
+Distribution: gamma
+Mean: 42.8600
+Std: 18.1978
+Min: 19.0000
+Max: 93.0000
+Skewness: 0.9628
+KS Statistic: 0.0719
+P-value: 0.9418
+----------------------------------------
+
+Feature: domain_length
+Type: continuous
+Distribution: lognorm
+Mean: 28.6400
+Std: 14.2937
+Min: 10.0000
+Max: 74.0000
+Skewness: 1.0582
+KS Statistic: 0.0915
+P-value: 0.7623
+----------------------------------------
+
+Feature: path_length
+Type: continuous
+Distribution: norm
+Mean: 6.2200
+Std: 10.1317
+Min: 1.0000
+Max: 48.0000
+Skewness: 2.6742
+KS Statistic: 0.3568
+P-value: 0.0000
+----------------------------------------
+
+Feature: query_length
+Type: binary
+Distribution: bernoulli
+Mean: 0.4200
+Std: 2.9400
+Min: 0.0000
+Max: 21.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: has_ip_address
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_suspicious_tld
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: subdomain_count
+Type: discrete
+Distribution: poisson
+Mean: 0.7600
+Std: 0.6184
+Min: 0.0000
+Max: 3.0000
+Skewness: 0.7153
+----------------------------------------
+
+Feature: dash_count
+Type: discrete
+Distribution: poisson
+Mean: 0.7600
+Std: 1.1056
+Min: 0.0000
+Max: 6.0000
+Skewness: 2.3484
+----------------------------------------
+
+Feature: dot_count
+Type: discrete
+Distribution: poisson
+Mean: 1.7600
+Std: 0.6184
+Min: 1.0000
+Max: 4.0000
+Skewness: 0.7153
+----------------------------------------
+
+Feature: slash_count
+Type: discrete
+Distribution: poisson
+Mean: 3.2400
+Std: 0.6800
+Min: 3.0000
+Max: 6.0000
+Skewness: 3.0953
+----------------------------------------
+
+Feature: at_symbol
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: double_slash_redirecting
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_suspicious_keywords
+Type: binary
+Distribution: bernoulli
+Mean: 0.0600
+Std: 0.2375
+Min: 0.0000
+Max: 1.0000
+Skewness: 3.7055
+----------------------------------------
+
+Feature: has_url_shortening
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_suspicious_port
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: digit_ratio
+Type: continuous
+Distribution: norm
+Mean: 0.0755
+Std: 0.1062
+Min: 0.0000
+Max: 0.3315
+Skewness: 1.2693
+KS Statistic: 0.3213
+P-value: 0.0000
+----------------------------------------
+
+Feature: special_char_ratio
+Type: continuous
+Distribution: norm
+Mean: 0.0233
+Std: 0.0320
+Min: 0.0000
+Max: 0.1294
+Skewness: 1.5468
+KS Statistic: 0.3068
+P-value: 0.0001
+----------------------------------------
+
+Feature: entropy
+Type: continuous
+Distribution: norm
+Mean: 3.7297
+Std: 0.3903
+Min: 2.8497
+Max: 4.5585
+Skewness: -0.3912
+KS Statistic: 0.0703
+P-value: 0.9513
+----------------------------------------
+
+Feature: uses_https
+Type: binary
+Distribution: bernoulli
+Mean: 0.5600
+Std: 0.4964
+Min: 0.0000
+Max: 1.0000
+Skewness: -0.2417
+----------------------------------------
+
+Feature: domain_age_days
+Type: binary
+Distribution: bernoulli
+Mean: -1.0000
+Std: 0.0000
+Min: -1.0000
+Max: -1.0000
+Skewness: nan
+----------------------------------------
+
+Feature: is_new_domain
+Type: binary
+Distribution: bernoulli
+Mean: 1.0000
+Std: 0.0000
+Min: 1.0000
+Max: 1.0000
+Skewness: nan
+----------------------------------------
+
+Feature: days_to_expire
+Type: binary
+Distribution: bernoulli
+Mean: -1.0000
+Std: 0.0000
+Min: -1.0000
+Max: -1.0000
+Skewness: nan
+----------------------------------------
+
+Feature: expires_soon
+Type: binary
+Distribution: bernoulli
+Mean: 1.0000
+Std: 0.0000
+Min: 1.0000
+Max: 1.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_registrar
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_registrant
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: a_record_count
+Type: discrete
+Distribution: poisson
+Mean: 2.0000
+Std: 1.8974
+Min: 0.0000
+Max: 8.0000
+Skewness: 1.7920
+----------------------------------------
+
+Feature: dns_resolves
+Type: binary
+Distribution: bernoulli
+Mean: 0.8200
+Std: 0.3842
+Min: 0.0000
+Max: 1.0000
+Skewness: -1.6659
+----------------------------------------
+
+Feature: has_ssl
+Type: binary
+Distribution: bernoulli
+Mean: 0.0200
+Std: 0.1400
+Min: 0.0000
+Max: 1.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: ssl_days_to_expire
+Type: binary
+Distribution: bernoulli
+Mean: 3.7600
+Std: 33.3200
+Min: -1.0000
+Max: 237.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: ssl_expires_soon
+Type: binary
+Distribution: bernoulli
+Mean: 0.9800
+Std: 0.1400
+Min: 0.0000
+Max: 1.0000
+Skewness: -6.8571
+----------------------------------------
+
+Feature: status_code
+Type: continuous
+Distribution: norm
+Mean: 301.9800
+Std: 172.6006
+Min: -1.0000
+Max: 403.0000
+Skewness: -1.1539
+KS Statistic: 0.4608
+P-value: 0.0000
+----------------------------------------
+
+Feature: content_length
+Type: binary
+Distribution: bernoulli
+Mean: 214.8200
+Std: 1503.7400
+Min: 0.0000
+Max: 10741.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: has_title
+Type: binary
+Distribution: bernoulli
+Mean: 0.0200
+Std: 0.1400
+Min: 0.0000
+Max: 1.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: title_length
+Type: binary
+Distribution: bernoulli
+Mean: 0.1400
+Std: 0.9800
+Min: 0.0000
+Max: 7.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: form_count
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_password_field
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_hidden_fields
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: total_links
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: external_links
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: image_count
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: external_images
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: script_count
+Type: binary
+Distribution: bernoulli
+Mean: 0.0600
+Std: 0.4200
+Min: 0.0000
+Max: 3.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: has_external_scripts
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_suspicious_content
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_copyright
+Type: binary
+Distribution: bernoulli
+Mean: 0.0200
+Std: 0.1400
+Min: 0.0000
+Max: 1.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: redirect_count
+Type: binary
+Distribution: bernoulli
+Mean: 0.0200
+Std: 0.1400
+Min: 0.0000
+Max: 1.0000
+Skewness: 6.8571
+----------------------------------------
+
+Feature: has_sitemap
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: sitemap_url_count
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: sitemap_structure_complexity
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: has_sitemap_index
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: sitemap_last_modified
+Type: binary
+Distribution: bernoulli
+Mean: 0.0000
+Std: 0.0000
+Min: 0.0000
+Max: 0.0000
+Skewness: nan
+----------------------------------------
+
+Feature: is_phishing
+Type: binary
+Distribution: bernoulli
+Mean: 1.0000
+Std: 0.0000
+Min: 1.0000
+Max: 1.0000
+Skewness: nan
+----------------------------------------
