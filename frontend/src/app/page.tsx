@@ -28,6 +28,12 @@ import {
 } from '@/lib/api';
 
 export default function Dashboard() {
+  // Extend DomainClassification to include our additional fields
+  interface ExtendedDomainClassification extends DomainClassification {
+    originalInput?: string;
+    processedDomain?: string;
+  }
+
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [cses, setCSEs] = useState<Record<string, CSE>>({});
   const [recentDetections, setRecentDetections] = useState<RecentDetection[]>([]);
@@ -37,22 +43,14 @@ export default function Dashboard() {
   // Domain classification form
   const [domainInput, setDomainInput] = useState('');
   const [selectedCSE, setSelectedCSE] = useState('auto-detect');
-  const [classificationResult, setClassificationResult] = useState<DomainClassification | null>(null);
+  const [classificationResult, setClassificationResult] = useState<ExtendedDomainClassification | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
 
   // Clean domain input as user types
   const handleDomainInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Real-time cleaning
-    value = value.replace(/^https?:\/\//, ''); // Remove protocols
-    value = value.replace(/\/.*$/, ''); // Remove paths
-    value = value.replace(/^www\./, ''); // Remove www prefix
-    
-    setDomainInput(value);
-  };
-
-  // Handle Enter key press for classification
+    const value = e.target.value;
+    setDomainInput(value);  // Keep original input as typed by user
+  };  // Handle Enter key press for classification
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !isClassifying && domainInput.trim()) {
       handleDomainClassification();
@@ -101,35 +99,39 @@ export default function Dashboard() {
   };
 
   const handleDomainClassification = async () => {
-    if (!domainInput.trim()) return;
-    
-    setIsClassifying(true);
-    setClassificationResult(null);
+    if (!domainInput.trim()) {
+      console.error("Please enter a domain to classify");
+      return;
+    }
 
+    setIsClassifying(true);
+    
     try {
-      // Clean the domain input - remove protocol and trailing slashes
-      let cleanDomain = domainInput.trim();
-      cleanDomain = cleanDomain.replace(/^https?:\/\//, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/.*$/, ''); // Remove path and everything after
-      cleanDomain = cleanDomain.replace(/^www\./, ''); // Remove www. prefix
+      // Clean domain only for API call, but preserve user input in UI
+      const cleanDomainForAPI = (input: string): string => {
+        return input
+          .replace(/^https?:\/\//, '')
+          .replace(/^www\./, '')
+          .split('/')[0];
+      };
       
-      // Update the input field with the clean domain
-      setDomainInput(cleanDomain);
+      const processedDomain = cleanDomainForAPI(domainInput);
       
-      const response = await apiClient.classifyDomain(
-        cleanDomain,
-        selectedCSE === 'auto-detect' ? undefined : selectedCSE
-      );
+      const response = await apiClient.classifyDomain(processedDomain, selectedCSE === 'auto-detect' ? undefined : selectedCSE);
       
-      if (isApiResponseSuccess(response)) {
-        setClassificationResult(response.data);
+      if (response.success && response.data) {
+        setClassificationResult({
+          ...response.data,
+          originalInput: domainInput, // Keep track of original input
+          processedDomain: processedDomain
+        } as ExtendedDomainClassification);
+        
+        console.log(`Classification Complete: ${response.data.classification}`);
       } else {
         throw new Error(response.error || 'Classification failed');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Classification error';
-      setError(errorMessage);
-      handleApiError(errorMessage);
+    } catch (error) {
+      console.error('Classification error:', error);
     } finally {
       setIsClassifying(false);
     }

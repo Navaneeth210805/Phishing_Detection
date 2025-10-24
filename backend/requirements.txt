@@ -19,5 +19,10 @@ fuzzywuzzy>=0.18.0
 python-Levenshtein>=0.20.0
 dnspython>=2.4.0
 certifi>=2023.0.0
+
+# PyTorch and deep learning dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
 cryptography>=41.0.0
 aiohttp>=3.8.0

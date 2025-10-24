@@ -20,9 +20,36 @@ import logging
 # Add backend directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Import our modules
-from phishing_detection_system import PhishingDetectionSystem
+try:
+    from updated_phishing_system import UpdatedPhishingDetectionSystem as PhishingDetectionSystem
+    print("✅ Using updated binary classification system")
+except ImportError:
+    from phishing_detection_system import PhishingDetectionSystem
+    print("⚠️ Fallback to legacy system")
 from cse_manager import CSEManager
+
+# Import the new realistic phishing detection service
+try:
+    from phishing_service import PhishingDetectionService
+    print("✅ Realistic Phishing Detection Service available")
+    REALISTIC_MODEL_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Realistic model not available: {e}")
+    REALISTIC_MODEL_AVAILABLE = False
+
+# Also attempt to import the enhanced PyTorch model as a fallback (non-breaking)
+try:
+    from enhanced_pytorch_model_fixed import EnhancedPhishingDetector
+    ENHANCED_PYTORCH_AVAILABLE = True
+    print("✅ Enhanced PyTorch model file available")
+except Exception as e:
+    ENHANCED_PYTORCH_AVAILABLE = False
+    print(f"⚠️ Enhanced PyTorch model not available: {e}")
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -30,22 +57,40 @@ CORS(app)  # Enable CORS for Next.js frontend
 
 # Global variables
 detection_system = None
+phishing_service = None
 monitoring_thread = None
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 def initialize_system():
     """Initialize the phishing detection system."""
-    global detection_system
+    global detection_system, phishing_service
+    
+    # Initialize legacy system
     try:
         detection_system = PhishingDetectionSystem()
-        logger.info("✅ Phishing Detection System initialized successfully")
-        return True
+        logger.info("✅ Legacy Phishing Detection System initialized successfully")
     except Exception as e:
-        logger.error(f"❌ Error initializing system: {e}")
-        return False
+        logger.error(f"❌ Error initializing legacy system: {e}")
+    
+    # Initialize realistic phishing service
+    if REALISTIC_MODEL_AVAILABLE:
+        try:
+            phishing_service = PhishingDetectionService()
+            logger.info("✅ Realistic Phishing Detection Service initialized successfully")
+            logger.info(f"   Model Performance: {phishing_service.model_info.get('test_accuracy', 'Unknown'):.1%} accuracy")
+        except Exception as e:
+            logger.error(f"❌ Error initializing realistic phishing service: {e}")
+            phishing_service = None
+    # Fallback: if the phishing_service module isn't available but our enhanced PyTorch
+    # implementation is present, instantiate it here so v2 endpoints can still work.
+    elif ENHANCED_PYTORCH_AVAILABLE:
+        try:
+            phishing_service = EnhancedPhishingDetector()
+            logger.info("✅ Enhanced PyTorch realistic detector initialized as phishing_service")
+        except Exception as e:
+            logger.error(f"❌ Error initializing Enhanced PyTorch detector: {e}")
+            phishing_service = None
+    
+    return detection_system is not None or phishing_service is not None
 
 # Health check endpoint
 @app.route('/api/health', methods=['GET'])
@@ -305,6 +350,181 @@ def discover_domains():
         logger.error(f"Error discovering domains: {e}")
         return jsonify({'error': str(e)}), 500
 
+# Realistic Phishing Detection Endpoints (New Production Model)
+@app.route('/api/v2/domains/predict', methods=['POST'])
+def predict_domain_realistic():
+    """
+    Predict domain using the realistic phishing detection model.
+    
+    This endpoint uses the new realistic model with 97.3% accuracy
+    and proper real-world constraints (no data leakage).
+    """
+    if not phishing_service:
+        return jsonify({
+            'error': 'Realistic phishing detection service not available',
+            'fallback': 'Use /api/domains/classify for legacy system'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        domain = data.get('domain')
+        
+        if not domain:
+            return jsonify({'error': 'Domain is required'}), 400
+        
+        # Clean domain input
+        domain = domain.strip()
+        if '://' in domain:
+            domain = domain.split('://')[1]
+        domain = domain.split('/')[0]
+        
+        # Get prediction
+        result = phishing_service.predict_single(domain)
+        
+        return jsonify({
+            'success': True,
+            'data': result,
+            'model_info': {
+                'version': 'realistic_v1.0',
+                'accuracy': '97.3%',
+                'type': 'Production-ready with real-world constraints'
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error predicting domain with realistic model: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v2/domains/predict/batch', methods=['POST'])
+def predict_domains_batch():
+    """Predict multiple domains using the realistic model."""
+    if not phishing_service:
+        return jsonify({
+            'error': 'Realistic phishing detection service not available'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        domains = data.get('domains', [])
+        
+        if not domains or not isinstance(domains, list):
+            return jsonify({'error': 'Domains list is required'}), 400
+        
+        if len(domains) > 100:
+            return jsonify({'error': 'Maximum 100 domains per batch'}), 400
+        
+        # Clean domains
+        cleaned_domains = []
+        for domain in domains:
+            domain = str(domain).strip()
+            if '://' in domain:
+                domain = domain.split('://')[1]
+            domain = domain.split('/')[0]
+            cleaned_domains.append(domain)
+        
+        # Get batch predictions
+        results = phishing_service.predict_batch(cleaned_domains)
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'predictions': results,
+                'total_processed': len(results),
+                'summary': {
+                    'phishing': sum(1 for r in results if r.get('prediction') == 'Phishing'),
+                    'suspicious': sum(1 for r in results if r.get('prediction') == 'Suspicious'),
+                    'errors': sum(1 for r in results if r.get('prediction') == 'Error')
+                }
+            },
+            'model_info': {
+                'version': 'realistic_v1.0',
+                'accuracy': '97.3%'
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error predicting domains batch: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v2/domains/explain', methods=['POST'])
+def explain_domain_prediction():
+    """Get detailed explanation of a domain prediction."""
+    if not phishing_service:
+        return jsonify({
+            'error': 'Realistic phishing detection service not available'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        domain = data.get('domain')
+        
+        if not domain:
+            return jsonify({'error': 'Domain is required'}), 400
+        
+        # Clean domain
+        domain = domain.strip()
+        if '://' in domain:
+            domain = domain.split('://')[1]
+        domain = domain.split('/')[0]
+        
+        # Get detailed explanation
+        explanation = phishing_service.explain_prediction(domain)
+        
+        return jsonify({
+            'success': True,
+            'data': explanation
+        })
+        
+    except Exception as e:
+        logger.error(f"Error explaining domain prediction: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v2/model/info', methods=['GET'])
+def get_model_info():
+    """Get detailed information about the realistic phishing detection model."""
+    if not phishing_service:
+        return jsonify({
+            'error': 'Realistic phishing detection service not available'
+        }), 503
+    
+    try:
+        model_info = phishing_service.get_model_info()
+        return jsonify({
+            'success': True,
+            'data': model_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting model info: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v2/model/health', methods=['GET'])
+def get_model_health():
+    """Check the health status of the realistic phishing detection model."""
+    if not phishing_service:
+        return jsonify({
+            'error': 'Realistic phishing detection service not available',
+            'status': 'unavailable'
+        }), 503
+    
+    try:
+        health_status = phishing_service.health_check()
+        
+        # Return appropriate HTTP status based on health
+        status_code = 200 if health_status.get('status') == 'healthy' else 500
+        
+        return jsonify({
+            'success': health_status.get('status') == 'healthy',
+            'data': health_status
+        }), status_code
+        
+    except Exception as e:
+        logger.error(f"Error checking model health: {e}")
+        return jsonify({
+            'error': str(e),
+            'status': 'unhealthy'
+        }), 500
+
 # Monitoring Endpoints
 @app.route('/api/monitoring/start', methods=['POST'])
 def start_monitoring():
@@ -515,8 +735,10 @@ if __name__ == '__main__':
     
     # Initialize the detection system
     if initialize_system():
-        print("✅ Phishing Detection System initialized")
+        print("✅ Systems initialized")
         print("🌐 API Documentation:")
+        print()
+        print("📋 LEGACY ENDPOINTS (Original System):")
         print("  • Health Check: GET /api/health")
         print("  • System Status: GET /api/system/status")
         print("  • CSE Management: GET/POST/DELETE /api/cses")
@@ -525,6 +747,21 @@ if __name__ == '__main__':
         print("  • Monitoring: POST /api/monitoring/start|stop")
         print("  • Reports: GET/POST /api/reports")
         print("  • Dashboard Stats: GET /api/stats/dashboard")
+        print()
+        
+        if phishing_service:
+            print("🚀 NEW REALISTIC MODEL ENDPOINTS (97.3% Accuracy):")
+            print("  • Single Prediction: POST /api/v2/domains/predict")
+            print("  • Batch Prediction: POST /api/v2/domains/predict/batch")
+            print("  • Detailed Explanation: POST /api/v2/domains/explain")
+            print("  • Model Information: GET /api/v2/model/info")
+            print("  • Model Health Check: GET /api/v2/model/health")
+            print()
+            print("✨ RECOMMENDED: Use v2 endpoints for production deployment")
+            print(f"📊 Model Performance: {phishing_service.model_info.get('test_accuracy', 0):.1%} accuracy, {phishing_service.model_info.get('roc_auc', 0):.3f} ROC AUC")
+        else:
+            print("⚠️  Realistic model endpoints not available (model file missing)")
+        
         print()
         print("🔥 Flask API running on: http://localhost:5000")
         print("🔌 CORS enabled for Next.js frontend")

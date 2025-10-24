@@ -42,7 +42,7 @@ class PhishingFeatureExtractor:
         
     def extract_url_features(self, url: str) -> Dict[str, Any]:
         """Extract URL-based features.""" 
-        features = {}
+        features = {}   
         original_url = url  # Store original URL
         
         try:
@@ -172,7 +172,6 @@ class PhishingFeatureExtractor:
             # Remove protocol if present
             if '://' in domain:
                 domain = urlparse(domain).netloc
-                
             # WHOIS features
             whois_info = self._get_whois_info(domain)
             features.update(whois_info)
