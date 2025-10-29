@@ -1,0 +1,25 @@
+services:
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hybrid-detector
+    working_dir: /app
+    environment:
+      - DATASET_PATH=/app/backend/dataset/combined_dataset.csv
+    volumes:
+      - ./:/app
+    command: ["python", "train_main.py"]
+
+  test:
+    image: hybrid-detector
+    depends_on:
+      - train
+    working_dir: /app
+    environment:
+      - SHORTLIST_DIR=/app/backend/dataset/PS-02_Shortlisting_set
+    volumes:
+      - ./:/app
+    command: ["python", "test_main.py"]
+
+
