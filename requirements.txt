@@ -1,0 +1,17 @@
+crawl4ai
+beautifulsoup4
+lxml
+
+torch
+torch-geometric
+scikit-learn
+pandas
+numpy
+
+Levenshtein
+tldextract
+
+scipy
+joblib
+
+tqdm
