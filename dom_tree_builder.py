@@ -1,12 +1,15 @@
 """
 DOM Tree Builder using Crawl4AI
 Creates a tree structure from websites with unique IDs and parent-child relationships
+Extracts all HTML features from a single BeautifulSoup parse
 """
 
 from crawl4ai import AsyncWebCrawler
 from bs4 import BeautifulSoup
 import json
 import asyncio
+import re
+import numpy as np
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 
@@ -30,6 +33,9 @@ class DOMTreeBuilder:
     def __init__(self):
         self.node_counter = 0
         self.dom_array = []
+        self.soup = None  # Store parsed soup for feature extraction
+        self.suspicious_keywords = ['verify', 'update', 'confirm', 'suspend', 'secure', 
+                                   'account', 'login', 'password', 'urgent', 'alert']
         
     async def crawl_website(self, url: str, render_js: bool = True) -> str:
         """
@@ -276,6 +282,137 @@ class DOMTreeBuilder:
         # Print children recursively
         for child_id in node['child_ids']:
             self.print_tree(child_id, indent + 1)
+    
+    def extract_statistical_features(self) -> dict:
+        """
+        Extract statistical features from the built DOM tree
+        Used for ML feature extraction without rebuilding the tree
+        
+        Returns:
+            Dictionary with DOM structural statistics
+        """
+        if not self.dom_array:
+            return {
+                'max_dom_depth': 0,
+                'avg_dom_depth': 0,
+                'dom_balance': 0,
+                'leaf_node_ratio': 0,
+                'avg_children_per_node': 0,
+                'dom_complexity': 0
+            }
+        
+        depths = [node.depth for node in self.dom_array]
+        leaf_nodes = sum(1 for node in self.dom_array if node.child_count == 0)
+        child_counts = [node.child_count for node in self.dom_array]
+        
+        max_depth = max(depths)
+        avg_depth = np.mean(depths)
+        balance = np.std(depths) if len(depths) > 1 else 0
+        
+        return {
+            'max_dom_depth': max_depth,
+            'avg_dom_depth': float(avg_depth),
+            'dom_balance': float(balance),
+            'leaf_node_ratio': leaf_nodes / len(self.dom_array),
+            'avg_children_per_node': float(np.mean(child_counts)),
+            'dom_complexity': (len(self.dom_array) * max_depth) / (balance + 1)
+        }
+    
+    def build_from_html_string(self, html: str):
+        """
+        Build DOM tree directly from HTML string (without URL crawling)
+        Useful for ML feature extraction from existing HTML
+        
+        Args:
+            html: Raw HTML string
+        """
+        # Reset for new tree
+        self.node_counter = 0
+        self.dom_array = []
+        
+        # Parse HTML and store soup for feature extraction
+        self.soup = BeautifulSoup(html, 'html.parser')
+        
+        # Build tree starting from root
+        self._build_node(self.soup.html if self.soup.html else self.soup, parent_id=None, depth=0)
+    
+    def extract_all_html_features(self) -> Dict:
+        """
+        Extract ALL HTML features from the parsed soup and DOM tree
+        Single source of truth for HTML feature extraction
+        Combines: tag counts, DOM structure, suspicious patterns
+        
+        Returns:
+            Dictionary with all HTML features (22 features total)
+        """
+        if self.soup is None or not self.dom_array:
+            # Return zero features if tree not built
+            return self._get_zero_features()
+        
+        features = {}
+        
+        try:
+            # === TAG COUNTING FEATURES (from soup) ===
+            features['num_tags'] = len(self.soup.find_all())
+            features['num_forms'] = len(self.soup.find_all('form'))
+            features['num_inputs'] = len(self.soup.find_all('input'))
+            features['num_links'] = len(self.soup.find_all('a'))
+            features['num_scripts'] = len(self.soup.find_all('script'))
+            features['num_iframes'] = len(self.soup.find_all('iframe'))
+            features['num_images'] = len(self.soup.find_all('img'))
+            features['num_divs'] = len(self.soup.find_all('div'))
+            
+            # Password field detection
+            password_inputs = self.soup.find_all('input', {'type': 'password'})
+            features['num_password_fields'] = len(password_inputs)
+            
+            # External links analysis
+            links = self.soup.find_all('a', href=True)
+            external_links = 0
+            for link in links:
+                href = link['href']
+                if href.startswith('http') and not href.startswith('#'):
+                    external_links += 1
+            features['num_external_links'] = external_links
+            features['external_link_ratio'] = external_links / max(len(links), 1)
+            
+            # Text analysis
+            text = self.soup.get_text().lower()
+            features['suspicious_keyword_count'] = sum(1 for kw in self.suspicious_keywords if kw in text)
+            
+            # Meta tags
+            features['has_meta_description'] = 1 if self.soup.find('meta', {'name': 'description'}) else 0
+            features['has_meta_keywords'] = 1 if self.soup.find('meta', {'name': 'keywords'}) else 0
+            
+            # Title
+            title = self.soup.find('title')
+            features['title_length'] = len(title.text) if title else 0
+            
+            # Hidden elements
+            hidden_elements = self.soup.find_all(style=re.compile(r'display:\s*none|visibility:\s*hidden'))
+            features['num_hidden_elements'] = len(hidden_elements)
+            
+            # === DOM TREE STRUCTURAL FEATURES ===
+            dom_stats = self.extract_statistical_features()
+            features.update(dom_stats)
+            
+        except Exception as e:
+            print(f"Error extracting HTML features: {e}")
+            features = self._get_zero_features()
+        
+        return features
+    
+    def _get_zero_features(self) -> Dict:
+        """Return zero-valued features when extraction fails"""
+        return {
+            'num_tags': 0, 'num_forms': 0, 'num_inputs': 0, 'num_links': 0,
+            'num_scripts': 0, 'num_iframes': 0, 'num_images': 0, 'num_divs': 0,
+            'num_password_fields': 0, 'num_external_links': 0, 'external_link_ratio': 0,
+            'suspicious_keyword_count': 0, 'has_meta_description': 0, 'has_meta_keywords': 0,
+            'title_length': 0, 'num_hidden_elements': 0,
+            'max_dom_depth': 0, 'avg_dom_depth': 0, 'dom_balance': 0,
+            'leaf_node_ratio': 0, 'avg_children_per_node': 0, 'dom_complexity': 0
+        }
 
 
 class DOMTreeComparator:
