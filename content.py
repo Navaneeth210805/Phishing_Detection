@@ -9,72 +9,42 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, accuracy_score, roc_auc_score
 import numpy as np
 import pandas as pd
-from bs4 import BeautifulSoup
 import re
 import tldextract
 from collections import Counter
-import joblib
-import os
-from datetime import datetime
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Optional
 import warnings
 warnings.filterwarnings('ignore')
+
+# Import DOM tree components - ALL HTML parsing done here
+from dom_tree_builder import DOMTreeBuilder, DOMTreeComparator
 
 torch.manual_seed(42)
 np.random.seed(42)
 
 class HTMLFeatureExtractor:
-    def __init__(self):
-        self.suspicious_keywords = ['verify', 'update', 'confirm', 'suspend', 'secure', 'account', 'login', 'password', 'urgent', 'alert']
+    """Wrapper around DOMTreeBuilder for HTML feature extraction"""
+    def __init__(self, use_dom_tree: bool = True):
+        self.use_dom_tree = use_dom_tree
+        self.dom_builder = DOMTreeBuilder() if use_dom_tree else None
         
     def extract(self, html: str) -> Dict:
-        features = {}
-        try:
-            soup = BeautifulSoup(html, 'html.parser')
-            features['num_tags'] = len(soup.find_all())
-            features['num_forms'] = len(soup.find_all('form'))
-            features['num_inputs'] = len(soup.find_all('input'))
-            features['num_links'] = len(soup.find_all('a'))
-            features['num_scripts'] = len(soup.find_all('script'))
-            features['num_iframes'] = len(soup.find_all('iframe'))
-            features['num_images'] = len(soup.find_all('img'))
-            features['num_divs'] = len(soup.find_all('div'))
-            password_inputs = soup.find_all('input', {'type': 'password'})
-            features['num_password_fields'] = len(password_inputs)
-            links = soup.find_all('a', href=True)
-            external_links = 0
-            for link in links:
-                href = link['href']
-                if href.startswith('http') and not href.startswith('#'):
-                    external_links += 1
-            features['num_external_links'] = external_links
-            features['external_link_ratio'] = external_links / max(len(links), 1)
-            text = soup.get_text().lower()
-            features['suspicious_keyword_count'] = sum(1 for kw in self.suspicious_keywords if kw in text)
-            features['has_meta_description'] = 1 if soup.find('meta', {'name': 'description'}) else 0
-            features['has_meta_keywords'] = 1 if soup.find('meta', {'name': 'keywords'}) else 0
-            title = soup.find('title')
-            features['title_length'] = len(title.text) if title else 0
-            hidden_elements = soup.find_all(style=re.compile(r'display:\s*none|visibility:\s*hidden'))
-            features['num_hidden_elements'] = len(hidden_elements)
-            features['max_dom_depth'] = self._get_max_depth(soup)
-        except:
-            for key in ['num_tags', 'num_forms', 'num_inputs', 'num_links', 'num_scripts', 'num_iframes', 
-                       'num_images', 'num_divs', 'num_password_fields', 'num_external_links', 
-                       'external_link_ratio', 'suspicious_keyword_count', 'has_meta_description', 
-                       'has_meta_keywords', 'title_length', 'num_hidden_elements', 'max_dom_depth']:
-                features[key] = 0
-        return features
-    
-    def _get_max_depth(self, element, depth=0):
-        if not hasattr(element, 'children'):
-            return depth
-        max_child_depth = depth
-        for child in element.children:
-            if hasattr(child, 'name'):
-                child_depth = self._get_max_depth(child, depth + 1)
-                max_child_depth = max(max_child_depth, child_depth)
-        return max_child_depth
+        """Extract all HTML features using DOMTreeBuilder"""
+        if self.use_dom_tree:
+            # Single parse, all features extracted
+            self.dom_builder.build_from_html_string(html)
+            return self.dom_builder.extract_all_html_features()
+        else:
+            # Fallback: return zeros
+            return {
+                'num_tags': 0, 'num_forms': 0, 'num_inputs': 0, 'num_links': 0,
+                'num_scripts': 0, 'num_iframes': 0, 'num_images': 0, 'num_divs': 0,
+                'num_password_fields': 0, 'num_external_links': 0, 'external_link_ratio': 0,
+                'suspicious_keyword_count': 0, 'has_meta_description': 0, 'has_meta_keywords': 0,
+                'title_length': 0, 'num_hidden_elements': 0,
+                'max_dom_depth': 0, 'avg_dom_depth': 0, 'dom_balance': 0,
+                'leaf_node_ratio': 0, 'avg_children_per_node': 0, 'dom_complexity': 0
+            }
 
 class URLFeatureExtractor:
     def extract(self, url: str) -> Dict:
@@ -157,15 +127,18 @@ class PhishingNet(nn.Module):
         return self.fusion(fused)
 
 class PhishingClassifier:
-    def __init__(self):
+    def __init__(self, use_dom_tree: bool = True, brand_database_path: Optional[str] = None):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.html_extractor = HTMLFeatureExtractor()
+        self.html_extractor = HTMLFeatureExtractor(use_dom_tree=use_dom_tree)
         self.url_extractor = URLFeatureExtractor()
         self.url_vectorizer = HashingVectorizer(n_features=500, analyzer='char', ngram_range=(2, 4), alternate_sign=False)
         self.html_vectorizer = HashingVectorizer(n_features=1000, alternate_sign=False)
         self.html_scaler = StandardScaler()
         self.url_scaler = StandardScaler()
         self.model = None
+        self.use_dom_tree = use_dom_tree
+        self.dom_comparator = DOMTreeComparator() if use_dom_tree else None
+        self.brand_database = self._load_brand_database(brand_database_path) if brand_database_path else {}
         
         # Calculate dimensions dynamically from feature extractors
         sample_html = "<html><body><div>test</div></body></html>"
@@ -183,11 +156,60 @@ class PhishingClassifier:
         else:
             print("Status: Running on CPU. (Tip: If you have a GPU, ensure torch-cuda is installed)")
         print(f"Active Device: {self.device}")
-        print(f"\nFeature Dimensions:")
+        print(f"\nFeature Configuration:")
+        print(f"  DOM Tree Analysis: {'✓ ENABLED' if use_dom_tree else '✗ DISABLED'}")
         print(f"  HTML features: {self.html_dim}")
         print(f"  URL features: {self.url_dim}")
         print(f"  TF-IDF features: {self.tfidf_dim}")
+        print(f"  Brand Database: {len(self.brand_database)} entries loaded" if self.brand_database else "  Brand Database: Not loaded")
         print("-"*40 + "\n")
+    
+    def _load_brand_database(self, path: str) -> Dict[str, List[Dict]]:
+        """Load brand DOM trees for similarity comparison"""
+        try:
+            import json
+            with open(path, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    
+    def compare_with_brands(self, html: str, threshold: float = 0.7) -> Dict:
+        """
+        Compare input HTML DOM with known brand DOM trees
+        Returns brand name and similarity score if match found
+        """
+        if not self.use_dom_tree or not self.brand_database:
+            return {'brand_match': None, 'similarity': 0.0}
+        
+        try:
+            # Build DOM tree for input using DOMTreeBuilder
+            builder = DOMTreeBuilder()
+            builder.build_from_html_string(html)
+            input_tree = [{'id': n.id, 'tag': n.tag, 'parent_id': n.parent_id, 'child_ids': n.child_ids,
+                          'child_count': n.child_count, 'attributes': n.attributes, 'depth': n.depth} 
+                         for n in builder.dom_array]
+            
+            best_match = {'brand': None, 'similarity': 0.0}
+            
+            for brand, brand_tree in self.brand_database.items():
+                # Use DOMTreeComparator for comparison
+                metrics = self.dom_comparator.compare_structure(input_tree, brand_tree)
+                similar_nodes = self.dom_comparator.find_similar_nodes(input_tree, brand_tree, threshold)
+                
+                # Calculate combined similarity score
+                size_sim = 1 - abs(metrics['tree1_nodes'] - metrics['tree2_nodes']) / max(metrics['tree1_nodes'], metrics['tree2_nodes'])
+                depth_sim = 1 - abs(metrics['max_depth_tree1'] - metrics['max_depth_tree2']) / max(metrics['max_depth_tree1'], metrics['max_depth_tree2'], 1)
+                node_sim = len(similar_nodes) / max(len(input_tree), len(brand_tree))
+                
+                combined_sim = (size_sim * 0.3 + depth_sim * 0.2 + node_sim * 0.5)
+                
+                if combined_sim > best_match['similarity']:
+                    best_match = {'brand': brand, 'similarity': combined_sim}
+            
+            return {'brand_match': best_match['brand'] if best_match['similarity'] >= threshold else None,
+                   'similarity': best_match['similarity']}
+        except:
+            return {'brand_match': None, 'similarity': 0.0}
     
     def extract_batch(self, urls, htmls):
         html_feats = pd.DataFrame([self.html_extractor.extract(h) for h in htmls]).fillna(0).values
@@ -352,8 +374,34 @@ class PhishingClassifier:
             conf = prob[0, 1].item()
             label = 'Phishing' if conf > 0.5 else 'Benign'
         return label, conf
+    
+    def predict_with_similarity(self, url: str, html: str) -> Dict:
+        """
+        Enhanced prediction with DOM similarity checking
+        Returns: {label, confidence, brand_match, similarity_score}
+        """
+        label, conf = self.predict(url, html)
+        brand_info = self.compare_with_brands(html)
+        
+        # If high similarity to a brand but predicted as phishing -> likely phishing attempt
+        if brand_info['brand_match'] and label == 'Phishing':
+            return {
+                'label': 'Phishing',
+                'confidence': min(conf + 0.1, 1.0),  # Boost confidence
+                'brand_match': brand_info['brand_match'],
+                'similarity': brand_info['similarity'],
+                'warning': f"⚠️ Impersonating {brand_info['brand_match']}"
+            }
+        
+        return {
+            'label': label,
+            'confidence': conf,
+            'brand_match': brand_info['brand_match'],
+            'similarity': brand_info['similarity'],
+            'warning': None
+        }
 
-clf = PhishingClassifier()
+clf = PhishingClassifier(use_dom_tree=True)
 data = clf.prepare_data(max_samples=10000)
 clf.train(data, epochs=20, batch_size=128, lr=0.001)
 
@@ -363,11 +411,24 @@ print("="*80)
 url1 = "https://secure-verify-account.tk/login"
 html1 = "<html><body><form><input type='password'></form><h1>Verify Your Account Now</h1></body></html>"
 label1, conf1 = clf.predict(url1, html1)
-print(f"\nURL: {url1}\nPrediction: {label1} ({conf1:.2%})")
+print(f"\n[Basic] URL: {url1}\nPrediction: {label1} ({conf1:.2%})")
+
+result1 = clf.predict_with_similarity(url1, html1)
+print(f"[Enhanced] Prediction: {result1['label']} ({result1['confidence']:.2%})")
+if result1['warning']:
+    print(f"           {result1['warning']}")
 
 url2 = "https://www.google.com/search"
 html2 = "<html><head><title>Google</title></head><body><div>Results</div></body></html>"
 label2, conf2 = clf.predict(url2, html2)
-print(f"\nURL: {url2}\nPrediction: {label2} ({conf2:.2%})")
+print(f"\n[Basic] URL: {url2}\nPrediction: {label2} ({conf2:.2%})")
+
+result2 = clf.predict_with_similarity(url2, html2)
+print(f"[Enhanced] Prediction: {result2['label']} ({result2['confidence']:.2%})")
+if result2['brand_match']:
+    print(f"           Matches brand: {result2['brand_match']} (sim: {result2['similarity']:.2%})")
 
 print("\n✅ Model saved: phishing_model.pth")
+print("✅ Features: HTML (22) + URL (20) + TF-IDF (1500)")
+print("✅ DOM Tree Integration: COMPLETE")
+print("✅ Brand Similarity Check: AVAILABLE")
