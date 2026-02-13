@@ -30,6 +30,7 @@ class SimilarityResult:
     combined_score: float
     verdict: str
     confidence: float
+    rotation_angle: Optional[float] = None
 
 
 class ScreenshotCapture:
@@ -127,6 +128,105 @@ class ScreenshotCapture:
         return saved_paths
 
 
+class RotationHandler:
+    """Handles rotation detection and correction for screenshots"""
+    
+    @staticmethod
+    def detect_rotation_orb(image1: np.ndarray, image2: np.ndarray) -> Optional[float]:
+        """
+        Detect rotation angle between two images using ORB feature matching
+        
+        Returns:
+            Rotation angle in degrees, or None if detection fails
+        """
+        try:
+            gray1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY) if len(image1.shape) == 3 else image1
+            gray2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY) if len(image2.shape) == 3 else image2
+            
+            orb = cv2.ORB_create(nfeatures=5000)
+            kp1, des1 = orb.detectAndCompute(gray1, None)
+            kp2, des2 = orb.detectAndCompute(gray2, None)
+            
+            if des1 is None or des2 is None or len(kp1) < 10 or len(kp2) < 10:
+                return None
+            
+            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+            matches = bf.match(des1, des2)
+            
+            if len(matches) < 10:
+                return None
+            
+            matches = sorted(matches, key=lambda x: x.distance)[:50]
+            
+            pts1 = np.float32([kp1[m.queryIdx].pt for m in matches])
+            pts2 = np.float32([kp2[m.trainIdx].pt for m in matches])
+            
+            M, inliers = cv2.estimateAffinePartial2D(pts1, pts2)
+            
+            if M is None:
+                return None
+            
+            angle = np.arctan2(M[1, 0], M[0, 0]) * 180 / np.pi
+            return angle
+            
+        except Exception as e:
+            print(f"Rotation detection failed: {str(e)}")
+            return None
+    
+    @staticmethod
+    def rotate_image(image: np.ndarray, angle: float) -> np.ndarray:
+        """
+        Rotate image by given angle (degrees)
+        
+        Args:
+            image: Input image
+            angle: Rotation angle in degrees (counter-clockwise)
+            
+        Returns:
+            Rotated image
+        """
+        h, w = image.shape[:2]
+        center = (w // 2, h // 2)
+        
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        
+        cos = np.abs(M[0, 0])
+        sin = np.abs(M[0, 1])
+        new_w = int((h * sin) + (w * cos))
+        new_h = int((h * cos) + (w * sin))
+        
+        M[0, 2] += (new_w / 2) - center[0]
+        M[1, 2] += (new_h / 2) - center[1]
+        
+        rotated = cv2.warpAffine(image, M, (new_w, new_h), 
+                                 flags=cv2.INTER_LINEAR,
+                                 borderMode=cv2.BORDER_REPLICATE)
+        
+        return rotated
+    
+    @staticmethod
+    def align_images(image1_path: str, image2_path: str) -> Tuple[np.ndarray, np.ndarray, Optional[float]]:
+        """
+        Align two images by detecting and correcting rotation
+        
+        Returns:
+            Tuple of (aligned_image1, aligned_image2, detected_rotation_angle)
+        """
+        img1 = cv2.imread(image1_path)
+        img2 = cv2.imread(image2_path)
+        
+        angle = RotationHandler.detect_rotation_orb(img1, img2)
+        
+        if angle is not None and abs(angle) > 2.0:
+            print(f"  Detected rotation: {angle:.2f}° - Correcting...")
+            img2_aligned = RotationHandler.rotate_image(img2, -angle)
+        else:
+            img2_aligned = img2
+            angle = 0.0 if angle is None else angle
+        
+        return img1, img2_aligned, angle
+
+
 class PixelwiseComparator:
     """Traditional pixel-based comparison methods"""
     
@@ -211,32 +311,35 @@ class PixelwiseComparator:
     def compare(
         self, 
         image1_path: str, 
-        image2_path: str
+        image2_path: str,
+        rotation_invariant: bool = True
     ) -> Dict[str, float]:
         """
         Compare two images using multiple pixel-based methods
         
+        Args:
+            rotation_invariant: If True, detect and correct rotation before comparison
+            
         Returns:
             Dictionary with various similarity metrics
         """
-        # Load images
-        img1 = cv2.imread(image1_path)
-        img2 = cv2.imread(image2_path)
+        if rotation_invariant:
+            img1, img2, rotation_angle = RotationHandler.align_images(image1_path, image2_path)
+        else:
+            img1 = cv2.imread(image1_path)
+            img2 = cv2.imread(image2_path)
+            rotation_angle = None
         
-        # Resize to same dimensions
         if img1.shape != img2.shape:
             img2 = cv2.resize(img2, (img1.shape[1], img1.shape[0]))
         
-        # Compute metrics
         mse = self.compute_mse(img1, img2)
         ssim = self.compute_ssim(img1, img2)
         hist_sim = self.compute_histogram_similarity(img1, img2)
         
-        # Normalize MSE to 0-1 scale (inverse, lower MSE = higher similarity)
         max_mse = 255.0 ** 2
         normalized_mse = 1.0 - min(mse / max_mse, 1.0)
         
-        # Clamp histogram similarity to [0, 1]
         hist_sim = max(0.0, min(1.0, hist_sim))
         
         return {
@@ -244,7 +347,8 @@ class PixelwiseComparator:
             'mse_normalized': normalized_mse,
             'ssim': ssim,
             'histogram_similarity': hist_sim,
-            'pixel_similarity': (normalized_mse + ssim + hist_sim) / 3.0
+            'pixel_similarity': (normalized_mse + ssim + hist_sim) / 3.0,
+            'rotation_angle': rotation_angle
         }
 
 
@@ -424,7 +528,8 @@ class VisualPhishingDetector:
         self,
         model_name: str = "facebook/dinov2-base",
         dinov2_weight: float = 0.7,
-        pixel_weight: float = 0.3
+        pixel_weight: float = 0.3,
+        rotation_invariant: bool = True
     ):
         """
         Initialize detector with both comparison methods
@@ -433,12 +538,13 @@ class VisualPhishingDetector:
             model_name: DINOv2 model variant
             dinov2_weight: Weight for semantic similarity (0-1)
             pixel_weight: Weight for pixel similarity (0-1)
+            rotation_invariant: Enable rotation detection and correction
         """
         self.dinov2 = DINOv2Comparator(model_name)
         self.pixel = PixelwiseComparator()
         self.screenshot = ScreenshotCapture()
+        self.rotation_invariant = rotation_invariant
         
-        # Ensure weights sum to 1
         total = dinov2_weight + pixel_weight
         self.dinov2_weight = dinov2_weight / total
         self.pixel_weight = pixel_weight / total
@@ -511,12 +617,14 @@ class VisualPhishingDetector:
         Returns:
             SimilarityResult with pixel-wise metrics and verdict
         """
-        # Pixel-wise comparison
-        pixel_metrics = self.pixel.compare(suspicious_path, reference_path)
+        pixel_metrics = self.pixel.compare(
+            suspicious_path, 
+            reference_path,
+            rotation_invariant=self.rotation_invariant
+        )
         
         combined_score = pixel_metrics['pixel_similarity']
         
-        # Determine verdict: HIGH similarity means matches legitimate site
         if combined_score >= 0.85:
             verdict = "MATCHES_LEGITIMATE"
             confidence = combined_score
@@ -535,7 +643,8 @@ class VisualPhishingDetector:
             ssim_score=pixel_metrics['ssim'],
             combined_score=combined_score,
             verdict=verdict,
-            confidence=confidence
+            confidence=confidence,
+            rotation_angle=pixel_metrics.get('rotation_angle')
         )
     
     def compare_screenshots(
@@ -555,7 +664,6 @@ class VisualPhishingDetector:
         Returns:
             SimilarityResult with all metrics and verdict
         """
-        # DINOv2 semantic comparison
         global_sim = self.dinov2.compute_global_similarity(
             suspicious_path, 
             reference_path
@@ -565,16 +673,17 @@ class VisualPhishingDetector:
             reference_path
         )
         
-        # Pixel-wise comparison
-        pixel_metrics = self.pixel.compare(suspicious_path, reference_path)
+        pixel_metrics = self.pixel.compare(
+            suspicious_path, 
+            reference_path,
+            rotation_invariant=self.rotation_invariant
+        )
         
-        # Combine scores
         combined_score = (
             self.dinov2_weight * region_metrics['region_similarity'] +
             self.pixel_weight * pixel_metrics['pixel_similarity']
         )
         
-        # Determine verdict: HIGH similarity means matches legitimate site
         if combined_score >= 0.85:
             verdict = "MATCHES_LEGITIMATE"
             confidence = combined_score
@@ -593,7 +702,8 @@ class VisualPhishingDetector:
             ssim_score=pixel_metrics['ssim'],
             combined_score=combined_score,
             verdict=verdict,
-            confidence=confidence
+            confidence=confidence,
+            rotation_angle=pixel_metrics.get('rotation_angle')
         )
     
     def compare_with_database(
@@ -700,12 +810,103 @@ class VisualPhishingDetector:
         )
 
 
-if __name__ == "__main__":
-    print("Initializing Visual Phishing Detector...")
+def test_rotation_invariance():
+    """
+    Test rotation handling by comparing original website with rotated version
+    """
+    print("\n" + "=" * 80)
+    print("ROTATION INVARIANCE TEST")
+    print("=" * 80)
+    
     detector = VisualPhishingDetector(
         model_name="facebook/dinov2-base",
         dinov2_weight=0.7,
-        pixel_weight=0.3
+        pixel_weight=0.3,
+        rotation_invariant=True
+    )
+    
+    screenshot_dir = "./screenshots"
+    Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
+    
+    print("\n1. Capturing example.com screenshot...")
+    capturer = ScreenshotCapture()
+    original_screenshot = f"{screenshot_dir}/example_original.png"
+    
+    if capturer.capture_screenshot("http://example.com", original_screenshot):
+        print(f"   Saved to: {original_screenshot}")
+    else:
+        print(f"   Failed to capture")
+        return
+    
+    print("\n2. Capturing rotated example.com from HTML file...")
+    rotated_url = f"file://{Path('/home/vk/Phishing_Detection/example_rotated.html').absolute()}"
+    rotated_screenshot = f"{screenshot_dir}/example_rotated.png"
+    
+    if capturer.capture_screenshot(rotated_url, rotated_screenshot):
+        print(f"   Saved to: {rotated_screenshot}")
+    else:
+        print(f"   Failed to capture")
+        return
+    
+    print("\n" + "=" * 80)
+    print("Comparing Original vs Rotated (15 degrees)")
+    print("=" * 80)
+    
+    print("\n--- Using Combined Method (Rotation-Invariant) ---")
+    result = detector.compare_screenshots(
+        original_screenshot,
+        rotated_screenshot,
+        reference_url="example.com (rotated)"
+    )
+    
+    if result.rotation_angle is not None:
+        print(f"Detected Rotation:    {result.rotation_angle:.2f}°")
+    print(f"Global Similarity:    {result.global_similarity:.4f}")
+    print(f"Region Similarity:    {result.region_similarity:.4f}")
+    print(f"Pixel Similarity:     {result.pixel_similarity:.4f}")
+    print(f"SSIM Score:           {result.ssim_score:.4f}")
+    print(f"Combined Score:       {result.combined_score:.4f}")
+    print(f"Verdict:              {result.verdict}")
+    print(f"Confidence:           {result.confidence:.2%}")
+    
+    print("\n--- Testing WITHOUT Rotation Correction ---")
+    detector_no_rotation = VisualPhishingDetector(
+        model_name="facebook/dinov2-base",
+        dinov2_weight=0.7,
+        pixel_weight=0.3,
+        rotation_invariant=False
+    )
+    
+    result_no_rot = detector_no_rotation.compare_screenshots(
+        original_screenshot,
+        rotated_screenshot,
+        reference_url="example.com (rotated, no correction)"
+    )
+    
+    print(f"Global Similarity:    {result_no_rot.global_similarity:.4f}")
+    print(f"Region Similarity:    {result_no_rot.region_similarity:.4f}")
+    print(f"Pixel Similarity:     {result_no_rot.pixel_similarity:.4f}")
+    print(f"Combined Score:       {result_no_rot.combined_score:.4f}")
+    print(f"Verdict:              {result_no_rot.verdict}")
+    
+    print("\n" + "=" * 80)
+    print(f"Improvement with rotation correction: "
+          f"{(result.combined_score - result_no_rot.combined_score) * 100:.2f}%")
+    print("=" * 80)
+
+
+if __name__ == "__main__":
+    print("Initializing Visual Phishing Detector...")
+    
+    # Test rotation invariance first
+    test_rotation_invariance()
+    
+    # Original bank comparison tests
+    detector = VisualPhishingDetector(
+        model_name="facebook/dinov2-base",
+        dinov2_weight=0.7,
+        pixel_weight=0.3,
+        rotation_invariant=True
     )
     
     print("\nCapturing screenshots and comparing...")
