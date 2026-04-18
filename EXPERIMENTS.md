@@ -113,6 +113,41 @@ paper (2020) and consistent with current state-of-the-art thinking.
 
 ---
 
+## Related Work — What Already Exists (and How We Differ)
+
+Papers are ordered by relevance to our architecture.
+
+### Character CNN papers (no handcrafted features)
+
+| Paper | Year | Architecture | Gap vs Ours |
+|-------|------|-------------|-------------|
+| [CNN-Fusion: An effective and lightweight phishing detection method based on multi-variant ConvNet](https://www.sciencedirect.com/science/article/abs/pii/S0020025523002281) | 2023 | Multi-scale parallel char CNN (various kernel sizes) + max pooling. 99%+ accuracy. | **No handcrafted feature branch at all.** Single stream only. |
+| [URLNet: Learning a URL Representation with Deep Learning for Malicious URL Detection](https://arxiv.org/abs/1802.03162) | 2018 | Dual-channel CNN: char embeddings + word embeddings. | Fuses char+word, not char+engineered features. No handcrafted features. |
+| [URLTran: Improving Phishing URL Detection Using Transformers](https://arxiv.org/abs/2106.05256) | 2021 | BERT/RoBERTa transformer on URL characters. 86.8% TPR at 0.01% FPR. | Transformer only, no feature engineering branch. |
+| [Phishing URL Detection via CNN and Attention-Based Hierarchical RNN](https://ieeexplore.ieee.org/document/8887407/) | 2019 | Char-level CNN (spatial) + attention hierarchical RNN (word-level temporal). Late fusion. | Fuses char+word with attention, not char+engineered features. |
+
+### Dual-stream / fusion papers (closest to ours)
+
+| Paper | Year | Architecture | Gap vs Ours |
+|-------|------|-------------|-------------|
+| [Comprehensive phishing detection: A multi-channel approach with variants TCN fusion leveraging URL and HTML features](https://www.sciencedirect.com/science/article/abs/pii/S1084804525000670) | 2025 | Dual channel: (1) URL char embedding + 3 TCN variants, (2) handcrafted features. 99.81% accuracy. | Uses TCN not char CNN; also uses HTML features beyond URL-only; kernel sizes not k=3,5,7. |
+| [A dual-layer deep learning model for parallel analysis of URL and HTML features in phishing website detection](https://link.springer.com/article/10.1007/s10115-025-02617-w) | 2025 | Dual-branch CNN: raw URL branch + HTML features branch. 99.53% accuracy. | HTML-based, not lexical feature MLP. Raw URL not character n-gram CNN. |
+| [URL2Graph++: Unified Semantic-Structural-Character Learning](https://arxiv.org/abs/2509.10287) | 2025 | BERT semantic encoder + dual-grained graph (subword + char level) + GCN. | Graph-based entirely. No handcrafted features, no CNN. Completely different approach. |
+
+### The paper we're evaluating against
+
+| Paper | Year | Architecture | Notes |
+|-------|------|-------------|-------|
+| [Exposing Malicious URLs: A Comprehensive Adversarial Analysis of Phishing Detectors](https://arxiv.org/abs/2005.08454) (Sabir et al.) | 2020 | 50 models: RF, XGB, LGBM, SVM, URLNet, EXPOSE, LSTM on handcrafted feature sets OR raw chars. | Never fuses both streams. Best normal: 98.58%. Best adv-trained: 97.71%. We beat both. |
+
+### What none of these papers do (our specific novelty)
+
+1. **Multi-scale char CNN (k=3,5,7 parallel) + separate residual MLP on 67 handcrafted URL features, fused** — this exact combination does not appear in any published paper found.
+2. **Ablation study** proving each stream's contribution on an adversarial benchmark — no prior adversarial phishing paper quantifies this.
+3. **Brand-level 52-class identification** combined with adversarial robustness evaluation — not done in any of the above.
+
+---
+
 ## Experiment 1 — 52-Class URLPhishNet (our original model)
 
 **Goal**: Detect phishing AND identify which brand is being impersonated (52 classes)
@@ -358,17 +393,47 @@ paper (2020) and consistent with current state-of-the-art thinking.
 
 ## Key Claims We Can Make
 
-**Claim 1 — Best normal accuracy**: Our model (99.18%) beats all 50 paper models on their own dataset.
-FPR is also better: ours ~0.5% vs paper best ~2.22%.
+> Honest assessment — each claim comes with what supports it and what the caveat is.
 
-**Claim 2 — Best adversarial robustness**: After adv training, 100% detection on all 3 attack types.
-Paper's best adv-trained model: 97.71% normal, unknown adversarial FNR breakdown.
+---
 
-**Claim 3 — Novel architecture**: None of the 50 paper models combine multi-scale CharCNN with a
-handcrafted-feature residual MLP. Our ablation (#6, #7) proves each stream contributes meaningfully.
+**Claim 1 — Higher normal accuracy on paper's dataset**
 
-**Claim 4 — Brand identification bonus**: Our 52-class model identifies which brand is impersonated,
-not just whether it's phishing. No paper model does this.
+> *"Our model achieves 99.18% accuracy on the Sabir et al. dataset, compared to the best reported model (98.58%, Basic Lexical + XGBoost)."*
+
+✅ **What supports it**: We trained and tested on the paper's exact dataset (same CSVs) with an 80/20 split. The 0.6% gap is consistent — FPR also improves from ~2.22% → ~0.5%, FNR from 2.22% → 1.42%.
+
+⚠️ **Caveat**: We capped legitimate training data to 300,000 (paper used ~1,048,574). We also don't know the paper's exact train/test split method — ours is random 80/20 stratified. The 0.6% improvement is real but modest, and the comparison is not perfectly controlled for data quantity.
+
+---
+
+**Claim 2 — Adversarial robustness improves with adversarial training**
+
+> *"Injecting attack URLs into training brings adversarial FNR from 51–76% down to near 0%, with only a 0.1% drop in normal accuracy."*
+
+✅ **What supports it**: Before adv training: Domain FNR=51.8%, Path FNR=76.2%, TLD FNR=57.0%. After: all near 0%. The normal accuracy drop is tiny (98.68% → 98.58%). This is a clean before/after comparison on the same model and test set.
+
+⚠️ **Caveat**: The 100% adversarial detection is because we trained on those exact attack types — it's expected. This is the same methodology the paper calls "Round 2". It does NOT mean the model is robust to new, unseen attack types. We cannot claim general adversarial robustness — only robustness to these specific 3 attacks.
+
+---
+
+**Claim 3 — Dual-stream architecture outperforms features-only baseline**
+
+> *"Adding CharCNN to the 67 feature MLP improves accuracy by +2.46%, halves FPR, and is critical for path adversarial resistance."*
+
+✅ **What supports it**: Controlled ablation experiments (Exp 2 vs Exp 6, Exp 1 vs Exp 7). Same dataset, same split, same training setup — only CharCNN removed. Results are clear: +2.46% accuracy, FPR 3.31%→1.11%, FNR 4.36%→1.57%. For 52-class brand identification, F1 drops from 0.54 → 0.33 without CharCNN.
+
+⚠️ **Caveat**: Among the 2024–25 literature, a 2025 TCN paper ([multi-channel TCN fusion](https://www.sciencedirect.com/science/article/abs/pii/S1084804525000670)) also combines char embeddings with handcrafted features. Our specific pairing (multi-scale char CNN k=3,5,7 + residual feature MLP) doesn't appear in published work, but the *idea* of fusing char patterns with features is not entirely new. The novelty is in the specific implementation and the adversarial validation.
+
+---
+
+**Claim 4 — Brand-level identification alongside binary detection**
+
+> *"Our 52-class model identifies which brand is being impersonated, not just whether a URL is phishing — none of the 50 Sabir et al. models do this."*
+
+✅ **What supports it**: The 52-class experiment achieves 77.64% accuracy across 50 brand classes + benign. This is strictly richer output than binary detection. No model in the Sabir et al. paper does multi-class brand identification.
+
+⚠️ **Caveat**: Brand identification is not the main contribution of this work — it exists because our base dataset (phishphresh) has brand labels. It's a bonus capability, not a claim we designed experiments around. We also haven't compared the 52-class model against any dedicated brand-identification paper.
 
 ---
 
