@@ -1,0 +1,26 @@
+================================================================================
+Adversarially-Trained Binary URLPhishNet vs. Sabir et al. (arXiv:2005.08454)
+Model: CharCNN (k=3,5,7) + FeatureMLP | 67 features | 15 epochs
+Training: phishphresh (666,315) + adversarial URLs (Domain=12,569, Path=100,000, TLD=9,768)
+Best epoch: 13  |  Best F1: 0.9856
+================================================================================
+
+OUR ADV-TRAINED MODEL RESULTS  (vs. non-adv-trained binary — for comparison)
+  Dataset                           Accuracy  F1-Macro      MCC    FPR%    FNR%
+  ------------------------------------------------------------------------------
+  Normal_Test (phishphresh)           98.58%    0.9856   0.9712   1.08%   1.85%  [acc -0.1%  mcc -0.0022 vs non-adv]
+  Domain_Adversary                   100.00%    1.0000   0.0000   0.00%   0.00%  [acc +51.8%  mcc +0.0000 vs non-adv]
+  Path_Adversary                      99.92%    0.4998   0.0000   0.00%   0.08%  [acc +76.1%  mcc +0.0000 vs non-adv]
+  TLD_Adversary                      100.00%    1.0000   0.0000   0.00%   0.00%  [acc +57.0%  mcc +0.0000 vs non-adv]
+
+PAPER MODELS — Adversarially Trained (best per feature set)
+  Feature Set                      Classifier  Accuracy  F1-Macro
+  --------------------------------------------------------------
+  BigramUrl_Results                RF          97.71%    0.9767
+  BoWUrlParts_Results              XGB         96.31%    0.9625
+  Basic_Lexical_Results            LGBM        95.16%    0.9511
+
+================================================================================
+KEY FINDING: Does adversarial training on paper's attacks help our model?
+Normal test accuracy may drop slightly (model trades some normal accuracy
+for robustness). Adversarial FNR should drop from 52-76% toward <10%.

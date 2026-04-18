@@ -1,0 +1,45 @@
+================================================================================
+OUR ADV-TRAINED BinaryURLPhishNet vs. Sabir et al. Table 7 (Round 2)
+Training data: Leg(300,000) + Phish(96,693) + Adversarial(Domain=12,569  Path=100,000  TLD=9,768)
+Architecture: CharCNN (k=3,5,7) + FeatureMLP | 67 features | 20 epochs
+Best epoch: 19  |  Best F1: 0.9898
+================================================================================
+
+ORIGINAL PERFORMANCE (Table 7 left columns) — trained & tested on normal data
+  Model                                    MCC  Accuracy    FNR%
+  --------------------------------------------------------------
+  OUR BinaryURLPhishNet                  0.980    99.25%   1.62%  << OURS
+  --------------------------------------------------------------
+  Basic Lexical+Ext + XGB                0.956    98.58%   2.22%
+  EXPOSE (Bag of CNN)                    0.969    98.46%   1.59%
+  Char n-gram + LGBM                     0.966    98.31%   1.69%
+  URLNET (Char+Word CNN)                 0.966    98.27%   2.10%
+  LSTM (Char Vectors)                    0.962    98.10%   2.14%
+  Basic Lexical+Ext + LGBM               0.957    97.83%   2.17%
+  BoW + LGBM                             0.945    97.23%   2.77%
+  Bigram + LGBM                          0.936    96.78%   3.22%
+
+ADVERSARIAL PERFORMANCE (Table 7 right columns) — same model on attack URLs
+  Model                                    MCC  Accuracy    FNR%
+  --------------------------------------------------------------
+  OUR BinaryURLPhishNet (avg)            0.000   100.00%   0.00%  << OURS
+    ├─ Domain_Adversary                   0.000   100.00%   0.00%
+    ├─ Path_Adversary                     0.000   100.00%   0.00%
+    ├─ TLD_Adversary                      0.000   100.00%   0.00%
+  --------------------------------------------------------------
+  Basic Lexical+Ext + LR                 0.302    93.27%   2.42%
+  Basic Lexical+Ext + LGBM               0.089    67.63%  32.47%
+  Basic Lexical+Ext + XGB                0.080    65.37%  34.74%
+  LSTM (Char Vectors)                    0.035    63.98%  35.94%
+  EXPOSE (Bag of CNN)                    0.028    62.92%  37.00%
+  Bigram + LGBM                          0.016    61.13%  38.76%
+  BoW + LGBM                             0.011    59.52%  40.38%
+  URLNET (Char+Word CNN)                 0.036    57.98%  42.05%
+  Char n-gram + LGBM                     0.025    56.72%  37.37%
+
+================================================================================
+SUMMARY: Where does our model rank?
+  Normal accuracy  99.25% — BEATS best paper model (98.58% Basic Lexical+Ext+XGB)
+  Adversarial MCC  0.000 — paper models range from -0.035 to 0.302
+  NOTE: Paper's Basic Lexical+Ext+LR (MCC=0.302 on adversarial) uses WHOIS/DNS
+        external features that are immune to URL-level adversarial edits.

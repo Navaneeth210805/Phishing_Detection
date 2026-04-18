@@ -1,0 +1,53 @@
+class_index,class_name,brand_target
+0,benign,
+1,other,other
+2,facebook,facebook
+3,meta,meta
+4,google,google
+5,robinhood,robinhood
+6,betwinner,betwinner
+7,naver,naver
+8,usps,usps
+9,trezor,trezor
+10,grandlisboamacau,grandlisboamacau
+11,instagram,instagram
+12,whatsapp,whatsapp
+13,at&t,at&t
+14,booking,booking
+15,ledger,ledger
+16,microsoft,microsoft
+17,roblox,roblox
+18,kleinanzeigen,kleinanzeigen
+19,rakuten,rakuten
+20,netflix,netflix
+21,at&amp;t,at&amp;t
+22,genericwebmailphishing,genericwebmailphishing
+23,amazon,amazon
+24,dhl,dhl
+25,punktum_dk,punktum_dk
+26,sbi_securities_japan,sbi_securities_japan
+27,argenta,argenta
+28,coinbase,coinbase
+29,salesforce,salesforce
+30,uphold,uphold
+31,internal revenue service,internal revenue service
+32,qmp,qmp
+33,allegro,allegro
+34,canva,canva
+35,outlook,outlook
+36,bet365,bet365
+37,tiktok,tiktok
+38,metamask,metamask
+39,mgm_macau,mgm_macau
+40,hostinger,hostinger
+41,nomura,nomura
+42,applecomputer,applecomputer
+43,d account,d account
+44,"sbi securities co.,ltd.","sbi securities co.,ltd."
+45,jojobet,jojobet
+46,apple,apple
+47,netcoins,netcoins
+48,swisspass,swisspass
+49,citadel credit union,citadel credit union
+50,ndax,ndax
+51,other_phishing,<all remaining brands>
