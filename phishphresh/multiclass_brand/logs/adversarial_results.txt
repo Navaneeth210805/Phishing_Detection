@@ -1,0 +1,13 @@
+52-class URLPhishNet — Adversarial Evaluation Report
+Model: epoch 39  train-F1=0.5368
+============================================================
+
+Dataset                     Acc%  F1-Macro     MCC    FPR%    FNR%
+------------------------------------------------------------
+Domain_Adversary          27.06%    0.2130  0.0000   0.00%  72.94%
+Path_Adversary            36.32%    0.2664  0.0000   0.00%  63.68%
+TLD_Adversary             27.12%    0.2133  0.0000   0.00%  72.88%
+
+Note: FNR = False Negative Rate = % adversarial phishing URLs that
+      evaded detection (model predicted benign when URL is phishing).
+Lower FNR is better. Paper models have FNR ~2-8% on normal data.

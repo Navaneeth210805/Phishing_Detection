@@ -1,0 +1,128 @@
+20:06:02  Device: cuda
+20:06:02  [1/6] Loading training data from Replication Package...
+20:06:02    Raw: legitimate=1,048,574  phishing=96,693
+20:06:02    Capped legitimate to 200,000
+20:06:03    Total: 296,693  (benign=200,000, phishing=96,693)
+20:06:03  [2/6] Extracting 67-dim URL features...
+20:06:03  Feature extractor: base=51 + extra=16 = 67 total
+20:06:37    X_feat: (296693, 67)  X_char: (296693, 256)
+20:06:37  [3/6] Train/test split (80/20 stratified)...
+20:06:37    Train=237,354  Test=59,339  phish%_train=32.6%  phish%_test=32.6%
+20:06:37    Scaler saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\models\scaler.pkl
+20:06:37  [4/6] Training BinaryURLPhishNet...
+20:06:49    Epoch  1/30  loss=0.3815  acc=93.45%  F1=0.9275  MCC=0.8583  FPR=7.68%  FNR=4.22%
+20:07:01    Epoch  2/30  loss=0.1145  acc=94.81%  F1=0.9428  MCC=0.8900  FPR=7.09%  FNR=1.25%
+20:07:12    Epoch  3/30  loss=0.0870  acc=97.69%  F1=0.9738  MCC=0.9478  FPR=2.29%  FNR=2.36%
+20:07:23    Epoch  4/30  loss=0.0646  acc=94.39%  F1=0.9385  MCC=0.8834  FPR=8.09%  FNR=0.48%
+20:07:35    Epoch  5/30  loss=0.0541  acc=97.82%  F1=0.9755  MCC=0.9515  FPR=2.62%  FNR=1.26%
+20:07:47    Epoch  6/30  loss=0.0419  acc=98.34%  F1=0.9812  MCC=0.9625  FPR=1.67%  FNR=1.63%
+20:07:58    Epoch  7/30  loss=0.0317  acc=98.51%  F1=0.9831  MCC=0.9661  FPR=1.21%  FNR=2.07%
+20:08:09    Epoch  8/30  loss=0.0292  acc=98.65%  F1=0.9846  MCC=0.9693  FPR=1.26%  FNR=1.54%
+20:08:21    Epoch  9/30  loss=0.0216  acc=98.63%  F1=0.9844  MCC=0.9689  FPR=0.65%  FNR=2.84%
+20:08:32    Epoch 10/30  loss=0.0179  acc=98.67%  F1=0.9850  MCC=0.9700  FPR=1.29%  FNR=1.41%
+20:08:43    Epoch 11/30  loss=0.0149  acc=98.59%  F1=0.9840  MCC=0.9682  FPR=1.60%  FNR=1.02%
+20:08:55    Epoch 12/30  loss=0.0132  acc=98.00%  F1=0.9776  MCC=0.9557  FPR=2.61%  FNR=0.72%
+20:09:06    Epoch 13/30  loss=0.0122  acc=98.89%  F1=0.9873  MCC=0.9747  FPR=0.80%  FNR=1.76%
+20:09:18    Epoch 14/30  loss=0.0094  acc=98.84%  F1=0.9869  MCC=0.9738  FPR=1.13%  FNR=1.20%
+20:09:29    Epoch 15/30  loss=0.0074  acc=98.85%  F1=0.9870  MCC=0.9740  FPR=1.09%  FNR=1.25%
+20:09:40    Epoch 16/30  loss=0.0070  acc=98.95%  F1=0.9880  MCC=0.9761  FPR=0.88%  FNR=1.40%
+20:11:22  Device: cuda
+20:11:22  [1/6] Loading phishphresh chunks...
+20:11:22    Found 67 chunks
+20:11:23    Total: 666,315  benign=367,904 (55.2%)  phishing=298,411 (44.8%)
+20:11:23  [2/6] Reconstructing same 80/20 split (RANDOM_STATE=42)...
+20:11:23    Train=533,052  Test=133,263  phish%_train=44.8%  phish%_test=44.7%
+20:11:23  [3/6] Fitting StandardScaler...
+20:11:23    Scaler saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\models\scaler.pkl
+20:11:23    Feature dim: 67
+20:11:23  [4/6] Training BinaryURLPhishNet (40 epochs)...
+20:11:24    Phishing class weight: 1.232
+20:11:51    Epoch  1/40  loss=0.2522  acc=96.46%  F1=0.9642  MCC=0.9283  FPR=3.28%  FNR=3.87%
+20:12:17    Epoch  2/40  loss=0.0938  acc=97.23%  F1=0.9720  MCC=0.9442  FPR=3.33%  FNR=2.09%
+20:12:43    Epoch  3/40  loss=0.0756  acc=97.58%  F1=0.9756  MCC=0.9513  FPR=2.88%  FNR=1.84%
+20:13:10    Epoch  4/40  loss=0.0604  acc=97.80%  F1=0.9777  MCC=0.9557  FPR=0.83%  FNR=3.90%
+20:13:38    Epoch  5/40  loss=0.0511  acc=98.06%  F1=0.9804  MCC=0.9608  FPR=2.08%  FNR=1.76%
+20:14:06    Epoch  6/40  loss=0.0426  acc=98.19%  F1=0.9817  MCC=0.9634  FPR=1.24%  FNR=2.52%
+20:14:34    Epoch  7/40  loss=0.0366  acc=98.03%  F1=0.9800  MCC=0.9603  FPR=0.57%  FNR=3.71%
+20:15:02    Epoch  8/40  loss=0.0331  acc=98.37%  F1=0.9835  MCC=0.9670  FPR=1.05%  FNR=2.35%
+20:15:30    Epoch  9/40  loss=0.0296  acc=98.34%  F1=0.9832  MCC=0.9665  FPR=1.55%  FNR=1.79%
+20:16:00    Epoch 10/40  loss=0.0253  acc=98.38%  F1=0.9836  MCC=0.9672  FPR=0.83%  FNR=2.61%
+20:16:48    Epoch 11/40  loss=0.0240  acc=98.43%  F1=0.9842  MCC=0.9683  FPR=1.09%  FNR=2.16%
+20:18:13    Epoch 12/40  loss=0.0220  acc=98.33%  F1=0.9831  MCC=0.9662  FPR=1.84%  FNR=1.46%
+20:19:57    Epoch 13/40  loss=0.0190  acc=98.33%  F1=0.9831  MCC=0.9663  FPR=1.90%  FNR=1.38%
+20:21:56    Epoch 14/40  loss=0.0172  acc=98.44%  F1=0.9842  MCC=0.9685  FPR=0.98%  FNR=2.27%
+20:24:16    Epoch 15/40  loss=0.0146  acc=98.47%  F1=0.9846  MCC=0.9692  FPR=0.92%  FNR=2.27%
+20:26:34    Epoch 16/40  loss=0.0138  acc=98.54%  F1=0.9852  MCC=0.9704  FPR=1.06%  FNR=1.96%
+20:28:52    Epoch 17/40  loss=0.0124  acc=98.52%  F1=0.9850  MCC=0.9701  FPR=1.37%  FNR=1.61%
+20:31:12    Epoch 18/40  loss=0.0112  acc=98.51%  F1=0.9850  MCC=0.9699  FPR=1.08%  FNR=1.99%
+20:33:16    Epoch 19/40  loss=0.0097  acc=98.59%  F1=0.9857  MCC=0.9714  FPR=1.21%  FNR=1.67%
+20:34:46    Epoch 20/40  loss=0.0084  acc=98.54%  F1=0.9852  MCC=0.9704  FPR=0.70%  FNR=2.41%
+20:36:41    Epoch 21/40  loss=0.0078  acc=98.55%  F1=0.9853  MCC=0.9707  FPR=1.38%  FNR=1.53%
+20:38:36    Epoch 22/40  loss=0.0062  acc=98.54%  F1=0.9853  MCC=0.9705  FPR=1.30%  FNR=1.65%
+20:40:31    Epoch 23/40  loss=0.0056  acc=98.57%  F1=0.9855  MCC=0.9710  FPR=1.38%  FNR=1.51%
+20:42:39    Epoch 24/40  loss=0.0055  acc=98.46%  F1=0.9844  MCC=0.9689  FPR=0.58%  FNR=2.74%
+20:44:27    Epoch 25/40  loss=0.0046  acc=98.61%  F1=0.9859  MCC=0.9718  FPR=1.06%  FNR=1.81%
+20:46:24    Epoch 26/40  loss=0.0038  acc=98.16%  F1=0.9814  MCC=0.9630  FPR=2.61%  FNR=0.90%
+20:48:41    Epoch 27/40  loss=0.0033  acc=98.52%  F1=0.9850  MCC=0.9700  FPR=0.70%  FNR=2.45%
+20:51:00    Epoch 28/40  loss=0.0029  acc=98.67%  F1=0.9865  MCC=0.9730  FPR=1.05%  FNR=1.69%
+20:53:24    Epoch 29/40  loss=0.0026  acc=98.65%  F1=0.9863  MCC=0.9727  FPR=1.24%  FNR=1.49%
+20:55:50    Epoch 30/40  loss=0.0022  acc=98.63%  F1=0.9861  MCC=0.9722  FPR=1.18%  FNR=1.61%
+20:58:09    Epoch 31/40  loss=0.0019  acc=98.63%  F1=0.9861  MCC=0.9722  FPR=1.24%  FNR=1.54%
+21:00:05    Epoch 32/40  loss=0.0016  acc=98.60%  F1=0.9858  MCC=0.9716  FPR=1.48%  FNR=1.32%
+21:01:26    Epoch 33/40  loss=0.0014  acc=98.65%  F1=0.9863  MCC=0.9727  FPR=1.00%  FNR=1.78%
+21:02:32    Epoch 34/40  loss=0.0013  acc=98.66%  F1=0.9864  MCC=0.9729  FPR=1.19%  FNR=1.53%
+21:04:23    Epoch 35/40  loss=0.0009  acc=98.67%  F1=0.9865  MCC=0.9730  FPR=1.17%  FNR=1.54%
+21:06:37    Epoch 36/40  loss=0.0009  acc=98.67%  F1=0.9866  MCC=0.9731  FPR=1.08%  FNR=1.63%
+21:08:12    Epoch 37/40  loss=0.0010  acc=98.67%  F1=0.9865  MCC=0.9731  FPR=1.17%  FNR=1.53%
+21:09:20    Epoch 38/40  loss=0.0008  acc=98.68%  F1=0.9867  MCC=0.9733  FPR=1.05%  FNR=1.65%
+21:11:24    Epoch 39/40  loss=0.0008  acc=98.68%  F1=0.9867  MCC=0.9734  FPR=1.11%  FNR=1.57%
+21:12:39    Epoch 40/40  loss=0.0008  acc=98.68%  F1=0.9867  MCC=0.9734  FPR=1.05%  FNR=1.64%
+21:12:39    Epoch log  -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\logs\training_log.csv
+21:12:39    Best model: epoch 39  F1=0.9867  -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\models\model_best.pth
+21:12:39  [5/6] Adversarial evaluation (Sabir et al. attack datasets)...
+21:12:40    Loaded best model from epoch 39
+21:12:46    Normal test: acc=98.68%  F1=0.9867  MCC=0.9734
+21:12:46    Domain_Adversary: 12,569 URLs (all phishing=1)
+21:12:48    Domain_Adversary: acc=48.23%  F1=0.3254  MCC=0.0000  FNR=51.77%  -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\logs\adversarial_binary_Domain_Adversary.csv
+21:12:49    Path_Adversary: 1,048,575 URLs, capping to 50,000
+21:13:03    Path_Adversary: acc=23.78%  F1=0.1921  MCC=0.0000  FNR=76.22%  -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\logs\adversarial_binary_Path_Adversary.csv
+21:13:03    TLD_Adversary: 9,768 URLs (all phishing=1)
+21:13:06    TLD_Adversary: acc=43.02%  F1=0.3008  MCC=0.0000  FNR=56.98%  -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\logs\adversarial_binary_TLD_Adversary.csv
+21:13:06  [6/6] Building comparison report...
+21:13:06  
+================================================================================
+Binary URLPhishNet vs. Sabir et al. (arXiv:2005.08454)
+Model: CharCNN (k=3,5,7) + FeatureMLP | 67 features | 40 epochs
+Train data: phishphresh dataset (367,904 benign + 298,411 phishing = 666,315 total)
+Best epoch: 39  |  Best F1: 0.9867
+================================================================================
+
+OUR BINARY MODEL RESULTS
+  Dataset                         Accuracy  F1-Macro      MCC    FPR%    FNR%
+  ----------------------------------------------------------------------------
+  Normal_Test (phishphresh)         98.68%    0.9867   0.9734   1.11%   1.57%
+  Domain_Adversary                  48.23%    0.3254   0.0000   0.00%  51.77%
+  Path_Adversary                    23.78%    0.1921   0.0000   0.00%  76.22%
+  TLD_Adversary                     43.02%    0.3008   0.0000   0.00%  56.98%
+
+PAPER MODELS — Normal Validation (best per feature set)
+  Feature Set                      Classifier  Accuracy  F1-Macro
+  --------------------------------------------------------------
+  BoWUrl_Results                   RF          97.36%    0.9736
+  BoWUrlParts_Results              RF          96.27%    0.9627
+  BigramUrl_Results                RF          96.10%    0.9610
+  Basic_Lexical_Results            RF          95.87%    0.9536
+
+PAPER MODELS — Adversarial Validation (best per feature set)
+  Feature Set                      Classifier  Accuracy  F1-Macro
+  --------------------------------------------------------------
+  BigramUrl_Results                RF          97.71%    0.9767
+  BoWUrlParts_Results              XGB         96.31%    0.9625
+  Basic_Lexical_Results            LGBM        95.16%    0.9511
+
+================================================================================
+NOTE: FNR = miss rate (% adversarial phishing URLs the model called benign).
+      Lower FNR = harder to fool. Paper models train on adversarial data too.
+      Our model was NOT adversarially trained — this is a fair cold comparison.
+21:13:06  Report -> C:\Users\nithi\Documents\Phishing_Detection\binary_phishing\logs\adversarial_results.txt
+21:13:06  Done.

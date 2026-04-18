@@ -1,0 +1,34 @@
+================================================================================
+Binary URLPhishNet vs. Sabir et al. (arXiv:2005.08454)
+Model: CharCNN (k=3,5,7) + FeatureMLP | 67 features | 40 epochs
+Train data: phishphresh dataset (367,904 benign + 298,411 phishing = 666,315 total)
+Best epoch: 39  |  Best F1: 0.9867
+================================================================================
+
+OUR BINARY MODEL RESULTS
+  Dataset                         Accuracy  F1-Macro      MCC    FPR%    FNR%
+  ----------------------------------------------------------------------------
+  Normal_Test (phishphresh)         98.68%    0.9867   0.9734   1.11%   1.57%
+  Domain_Adversary                  48.23%    0.3254   0.0000   0.00%  51.77%
+  Path_Adversary                    23.78%    0.1921   0.0000   0.00%  76.22%
+  TLD_Adversary                     43.02%    0.3008   0.0000   0.00%  56.98%
+
+PAPER MODELS — Normal Validation (best per feature set)
+  Feature Set                      Classifier  Accuracy  F1-Macro
+  --------------------------------------------------------------
+  BoWUrl_Results                   RF          97.36%    0.9736
+  BoWUrlParts_Results              RF          96.27%    0.9627
+  BigramUrl_Results                RF          96.10%    0.9610
+  Basic_Lexical_Results            RF          95.87%    0.9536
+
+PAPER MODELS — Adversarial Validation (best per feature set)
+  Feature Set                      Classifier  Accuracy  F1-Macro
+  --------------------------------------------------------------
+  BigramUrl_Results                RF          97.71%    0.9767
+  BoWUrlParts_Results              XGB         96.31%    0.9625
+  Basic_Lexical_Results            LGBM        95.16%    0.9511
+
+================================================================================
+NOTE: FNR = miss rate (% adversarial phishing URLs the model called benign).
+      Lower FNR = harder to fool. Paper models train on adversarial data too.
+      Our model was NOT adversarially trained — this is a fair cold comparison.
