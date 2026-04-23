@@ -1,0 +1,44 @@
+# Ignore only generated artifacts, models, logs, and bulky datasets.
+# Existing tracked repo files remain unchanged and commit-visible.
+
+# Python cache
+node_modules/
+
+# JS deps
+__pycache__/
+
+# Trained models / checkpoints
+*.pth
+*.pt
+*.pkl
+
+# Run logs
+*.log
+
+# Generated reports / metrics
+*.json
+*.jsonl
+
+# Large generated data artifacts
+*.npz
+*.csv
+
+# Non-essential local docs/assets
+*.pdf
+example-*.html
+
+# Local data and output folders
+models/
+screenshots/
+sample_preview/
+submission/
+visual_consolidated_screenshots/
+live_collect_full_phishing/
+live_collect_pilot/
+dom_unsup_features/
+dom_unsup_subsample/
+dom_unsup_subsample_brand_stage1/
+dom_unsup_subsample_combined/
+phishing_*/
+not-phishing_*/
+docs/
