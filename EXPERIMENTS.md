@@ -389,6 +389,7 @@ Papers are ordered by relevance to our architecture.
 | 8 | FeatureMLP PD only (GAN attack eval) | phishphresh | 95.52% | **100% evaded by GAN** |
 | 9 | Hardened FeatureMLP (GAN adv training) | phishphresh + GAN adv | 94.06% | **0% evaded — fully closed** |
 | 10 | FeatureMLP + Mahalanobis OOD (GAN defense, no GAN training data) | phishphresh | **95.45%** | **100% GAN detected, 1% FPR** |
+| 11 | Exp 10 model cross-dataset validation (no retraining) | Replication Package | 57% real (scaler shift) | **100% GAN detected (different dataset GAN)** |
 | — | Paper's best normal (XGB) | paper data | 98.58% | — |
 | — | Paper's best adv-trained (RF) | paper data + attacks | 97.71% | ~2.4% avg |
 
@@ -427,6 +428,20 @@ Papers are ordered by relevance to our architecture.
 ✅ **What supports it**: Controlled ablation experiments (Exp 2 vs Exp 6, Exp 1 vs Exp 7). Same dataset, same split, same training setup — only CharCNN removed. Results are clear: +2.46% accuracy, FPR 3.31%→1.11%, FNR 4.36%→1.57%. For 52-class brand identification, F1 drops from 0.54 → 0.33 without CharCNN.
 
 ⚠️ **Caveat**: Among the 2024–25 literature, a 2025 TCN paper ([multi-channel TCN fusion](https://www.sciencedirect.com/science/article/abs/pii/S1084804525000670)) also combines char embeddings with handcrafted features. Our specific pairing (multi-scale char CNN k=3,5,7 + residual feature MLP) doesn't appear in published work, but the *idea* of fusing char patterns with features is not entirely new. The novelty is in the specific implementation and the adversarial validation.
+
+---
+
+**Claim 5 — Mahalanobis OOD is a dataset-agnostic, training-free GAN defense**
+
+> *"The Mahalanobis OOD detector, trained only on real phishphresh URLs, detects 100% of GAN adversarial
+> vectors from both phishphresh and the Sabir Replication Package — without seeing a single GAN sample
+> during training, and without needing to know which GAN or which dataset the attacker used."*
+
+✅ **What supports it**: Exp 10 — 100% detection of 238,729 phishphresh-origin GAN vectors with 1.02% FPR.
+Exp 11 — 100% detection of 77,354 Replication Package-origin GAN vectors using the same unmodified model.
+The Mahalanobis scores for adversarial vectors (median 2,488,141 and 118,653 respectively) are 231–4,845× above the calibration threshold (513). The structural reason is clear: AlEroud's binary encoding quantizes adversarial outputs to 3 discrete midpoints per feature — a geometric artifact the OOD detector picks up regardless of which dataset trained the GAN.
+
+⚠️ **Caveat**: This defense is specific to feature-space GAN attacks that use binary quantization (AlEroud 2020 architecture). It does NOT defend against character-level URL mutations (Sabir adversarial URLs — Exp 11C shows 0% OOD detection for those). A complete defense requires combining OOD detection (for GAN attacks) with adversarial URL training (for char-level attacks).
 
 ---
 
@@ -634,6 +649,84 @@ This is the planned Exp 10.
 
 ---
 
+## Experiment 11 — Cross-Dataset Validation: Mahalanobis OOD on Replication Package
+
+**What was TRAINED**: Nothing. Exp 10 model loaded as-is (no retraining).
+**What was TESTED**: Three evaluations using the Sabir et al. Replication Package to validate that the Mahalanobis OOD defense generalises beyond phishphresh.
+
+**Reference papers**:
+- Lee et al., NeurIPS 2018 — [arXiv:1807.03888](https://arxiv.org/abs/1807.03888) (Mahalanobis OOD)
+- AlEroud & Karabatis, IWSPA 2020 — [DOI:10.1145/3375708.3380315](https://dl.acm.org/doi/10.1145/3375708.3380315) (GAN attack)
+- Sabir et al. 2020 — [arXiv:2005.08454](https://arxiv.org/abs/2005.08454) (Replication Package datasets)
+
+**In plain terms**:
+> The key question: does the Mahalanobis OOD detector (trained only on phishphresh) still catch GAN
+> adversarial vectors when the GAN was trained on a completely different phishing dataset (Replication Package)?
+> If yes → the defense is truly dataset-agnostic. Answer: **yes — 100% detection on a completely new GAN**.
+
+| Setting | Value |
+|---------|-------|
+| Exp 10 model | Loaded from `binary_mahalanobis_ood/` — NOT retrained |
+| Replication Package phishing | `Phish_Training.csv` — 77,354 URLs (different from phishphresh) |
+| Replication Package legitimate | `Leg_Training.csv` — 100,000 URLs (capped) |
+| Adversarial datasets | `DomainAdversary.csv`, `PathAdversary.csv`, `TLDAdversary.csv` |
+| GAN trained on | Replication Package phishing features (77,354 samples) — NOT phishphresh |
+| Output | `binary_replication_gan_test/` |
+| Script | `train_replication_gan_test.py` |
+
+**Part A — Real URL Classification (Replication Package → Exp 10 model)**:
+
+| Metric | Value | Note |
+|--------|-------|------|
+| Accuracy | 57.32% | Poor — expected (scaler mismatch: phishphresh-fitted scaler applied to different URL distribution) |
+| FNR | 34.27% | |
+| FPR | 50.81% | |
+| OOD flagged (real URLs) | 6.73% | Higher than Exp 10's 1.02% — distribution shift inflates scores |
+
+**Interpretation**: Feature-based models require in-distribution scaling to perform well. The cross-dataset accuracy drop (98%→57%) shows that the StandardScaler trained on phishphresh does not transfer to the Replication Package URL distribution. This is a known limitation of handcrafted feature approaches and motivates using the CharCNN stream (character patterns are more domain-agnostic).
+
+**Part B — GAN Vectors from Replication Package Phishing Features**:
+
+| Metric | Value |
+|--------|-------|
+| GAN training data | Phish_Training.csv — 77,354 Replication Package phishing URLs |
+| Adversarial vectors generated | 77,354 |
+| GAN evasion (no OOD layer) | **100.0%** |
+| Mahalanobis OOD detection | **100.0%** |
+| Adversarial score median | 118,653 (231× above threshold of 513) |
+
+**Key finding**: Even with a GAN trained on a completely different dataset, OOD detection is 100%. The quantization artifact (all features snap to 3 discrete midpoints via AlEroud's binary encode→decode) is independent of which dataset was used — it's a structural property of the GAN architecture itself.
+
+**Part C — Sabir Adversarial URLs (DomainAdversary / PathAdversary / TLDAdversary)**:
+
+| Dataset | Accuracy | FNR | OOD flagged | Interpretation |
+|---------|----------|-----|-------------|----------------|
+| DomainAdversary (12,569) | 92.39% | 7.61% | 0% | Real URLs — in-distribution, correctly not flagged |
+| PathAdversary (50,000) | 0.56% | 99.44% | 0% | Real URLs — model misclassifies but not OOD |
+| TLDAdversary (9,768) | 67.88% | 32.12% | 3.44% | Real URLs — not OOD |
+
+**Key finding**: Sabir adversarial URLs are real mutated URL strings with continuous, realistic feature values. The Mahalanobis OOD detector correctly does NOT flag them as OOD — they are in-distribution. The high FNR on PathAdversary confirms what Exp 3 showed: path mutations require CharCNN + adversarial training, not OOD detection. These are two distinct attack classes requiring different defenses.
+
+**Defense strategy map (what this experiment reveals)**:
+
+| Attack type | Defense needed | Mahalanobis OOD? | Adv training? |
+|-------------|---------------|-----------------|---------------|
+| GAN feature-space (AlEroud) | Mahalanobis OOD | ✅ 100% detection | Not needed |
+| GAN on different dataset | Mahalanobis OOD | ✅ 100% detection | Not needed |
+| Domain char mutations (Sabir) | CharCNN + adv training | ✗ Not OOD | ✅ Needed |
+| Path mutations (Sabir) | CharCNN + adv training | ✗ Not OOD | ✅ Needed |
+| TLD mutations (Sabir) | CharCNN + adv training | ✗ Not OOD | ✅ Needed |
+
+**Saved artifacts**:
+- `binary_replication_gan_test/models/gan_generator_reppack.pth` — GAN Generator trained on Replication Package phishing
+- `binary_replication_gan_test/logs/run.log` — full run log
+- `binary_replication_gan_test/logs/eval_A_real_urls.txt` — Part A classification report
+- `binary_replication_gan_test/logs/eval_B_gan_vectors.txt` — Part B GAN detection report
+- `binary_replication_gan_test/logs/eval_C_sabir_adversarial.txt` — Part C adversarial URL report
+- `binary_replication_gan_test/logs/gan_training_loss.csv` — GAN training loss curve
+
+---
+
 ## Directory Map
 
 ```
@@ -646,7 +739,8 @@ binary_feat_only/               ← Exp 6  (ablation: binary, MLP only)
 multiclass_feat_only/           ← Exp 7  (ablation: 52-class, MLP only)
 binary_phishing_adv_gan/        ← Exp 8  (GAN attack evaluation — 100% evasion demonstrated)
 binary_gan_hardened/            ← Exp 9  (GAN adversarial training defense — evasion closed to 0%)
-binary_mahalanobis_ood/         ← Exp 10 (Mahalanobis OOD detection — 100% GAN detected, no GAN training data needed)
+binary_mahalanobis_ood/         ← Exp 10 (Mahalanobis OOD detection — 100% GAN detected, no GAN data needed)
+binary_replication_gan_test/    ← Exp 11 (cross-dataset validation — 100% GAN detection on different dataset)
 ```
 
 Each directory contains:
