@@ -4,17 +4,13 @@ __pycache__/
 *.pyo
 .venv/
 
-# Large data files
+# Large data files (too big for GitHub)
 *.npz
 adversarial_dataset.csv
 *.csv.gz
 
 # Environment
 .env
-
-# Model weights (large binaries)
-*.pth
-*.pkl
 
 # IDE
 .vscode/
