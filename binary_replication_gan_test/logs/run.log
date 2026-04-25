@@ -1,0 +1,95 @@
+21:31:22  ================================================================================
+21:31:22  Experiment 11 — Cross-Dataset Validation: Mahalanobis OOD + Replication Package
+21:31:22  Exp 10 model loaded (no retraining).  Ref: Lee 2018 NeurIPS + AlEroud 2020 IWSPA
+21:31:22  Device : cuda
+21:31:22  ================================================================================
+21:31:22  
+[SETUP] Loading Exp 10 Mahalanobis OOD model...
+21:31:22    Loaded: C:\Users\nithi\Documents\Phishing_Detection\binary_mahalanobis_ood\models\feature_mlp.pth
+21:31:22    Feature dim: 67  |  OOD threshold: 513.1637
+21:31:22    Feature extractor dim: 67
+21:31:22  
+============================================================
+21:31:22  PART A — Real URL Classification (Replication Package)
+21:31:22  ============================================================
+21:31:22  
+  Loading Leg_Training.csv (cap=100,000) + Phish_Training.csv...
+21:31:23    Legitimate: 100,000  |  Phishing: 96,693
+21:31:23    Extracting features for legitimate URLs...
+21:31:32    Extracting features for phishing URLs...
+21:31:46    Combined: 196,693 samples  Benign=100,000  Phishing=96,693
+21:31:46    Test split: 39,339 URLs
+21:31:46    [Part A: Replication Package real URLs (test split)]
+21:31:46      Samples         : 39,339
+21:31:46      Standard acc    : 57.32%  FNR=34.27%  FPR=50.81%
+21:31:46      OOD flagged     : 2,648 / 39,339 (6.73%)
+21:31:46      Of OOD, % phish : 96.8%
+21:31:46      Maha score med  : 82.74  max=196697.29
+21:31:46    Phishing training features for GAN: 77,354
+21:31:46  
+============================================================
+21:31:46  PART B — AlEroud GAN on Replication Package phishing features
+21:31:46  ============================================================
+21:31:46  
+  Binarising phishing features (AlEroud 2020 encoding)...
+21:31:46    Binary dim: 134 | Phishing samples for GAN: 77,354
+21:31:47  
+  Computing PD predictions on phishing training set...
+21:31:47    PD detects 50,735/77,354 as phishing (65.6%)
+21:31:47  
+  Training GAN (100 epochs, batch=512)...
+21:31:48    GAN Epoch 001/100  loss_G=0.5448  loss_D=0.5881
+21:31:53    GAN Epoch 010/100  loss_G=0.0001  loss_D=0.2930
+21:31:58    GAN Epoch 020/100  loss_G=0.0000  loss_D=0.2483
+21:32:04    GAN Epoch 030/100  loss_G=0.0000  loss_D=0.2295
+21:32:09    GAN Epoch 040/100  loss_G=0.0000  loss_D=0.2181
+21:32:15    GAN Epoch 050/100  loss_G=0.0000  loss_D=0.2094
+21:32:20    GAN Epoch 060/100  loss_G=0.0000  loss_D=0.2031
+21:32:26    GAN Epoch 070/100  loss_G=0.0000  loss_D=0.1972
+21:32:32    GAN Epoch 080/100  loss_G=0.0000  loss_D=0.1930
+21:32:37    GAN Epoch 090/100  loss_G=0.0000  loss_D=0.1898
+21:32:43    GAN Epoch 100/100  loss_G=0.0000  loss_D=0.1875
+21:32:43    GAN generator saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_replication_gan_test\models/gan_generator_reppack.pth
+21:32:43  
+  Generating adversarial feature vectors...
+21:32:43    Generated 77,354 adversarial feature vectors
+21:32:44  
+  GAN evasion (no OOD layer)  : 100.0%  (77,354/77,354)
+21:32:44    OOD detected (Mahalanobis)  : 100.0%  (77,354/77,354)
+21:32:44    Adv score median  : 118653.91
+21:32:44    OOD threshold     : 513.1637
+21:32:44  
+============================================================
+21:32:44  PART C — Sabir Adversarial URLs (DomainAdversary / PathAdversary / TLDAdversary)
+21:32:44  ============================================================
+21:32:44  
+  Loading DomainAdversary (cap=12,569)...
+21:32:44      URLs: 12,569
+21:32:45    [DomainAdversary]
+21:32:45      Samples         : 12,569
+21:32:45      Standard acc    : 92.39%  FNR=7.61%  FPR=0.00%
+21:32:45      OOD flagged     : 0 / 12,569 (0.00%)
+21:32:45      Of OOD, % phish : 0.0%
+21:32:45      Maha score med  : 103.89  max=460.14
+21:32:45  
+  Loading PathAdversary (cap=50,000)...
+21:32:46      URLs: 50,000
+21:32:51    [PathAdversary]
+21:32:51      Samples         : 50,000
+21:32:51      Standard acc    : 0.56%  FNR=99.44%  FPR=0.00%
+21:32:51      OOD flagged     : 0 / 50,000 (0.00%)
+21:32:51      Of OOD, % phish : 0.0%
+21:32:51      Maha score med  : 39.61  max=229.50
+21:32:51  
+  Loading TLDAdversary (cap=9,768)...
+21:32:51      URLs: 9,768
+21:32:52    [TLDAdversary]
+21:32:52      Samples         : 9,768
+21:32:52      Standard acc    : 67.88%  FNR=32.12%  FPR=0.00%
+21:32:52      OOD flagged     : 336 / 9,768 (3.44%)
+21:32:52      Of OOD, % phish : 100.0%
+21:32:52      Maha score med  : 93.16  max=1759.25
+21:32:53  
+================================================================================
+21:32:53  Experiment 11 complete. Reports in binary_replication_gan_test/logs/
+21:32:53  ================================================================================

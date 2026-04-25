@@ -1,0 +1,12 @@
+============================================================
+Part B — GAN Adversarial Vectors (Replication Package phishing data)
+Exp 10 model: binary_mahalanobis_ood/ (phishphresh-trained)
+============================================================
+
+GAN architecture  : AlEroud & Karabatis IWSPA 2020
+GAN training data : Phish_Training.csv (77,354 phishing)
+Adversarial vecs  : 77,354
+Evasion (no OOD)  : 100.0%
+OOD detected      : 100.0%
+Adv score median  : 118653.91
+OOD threshold     : 513.1637

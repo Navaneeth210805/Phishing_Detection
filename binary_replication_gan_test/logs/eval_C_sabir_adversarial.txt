@@ -1,0 +1,26 @@
+============================================================
+Part C — Sabir et al. Adversarial URLs (Domain/Path/TLD)
+Exp 10 model: binary_mahalanobis_ood/ (phishphresh-trained)
+============================================================
+
+[DomainAdversary]
+  Samples     : 12,569
+  Accuracy    : 92.39%
+  FNR (missed phishing) : 7.61%
+  OOD flagged : 0 (0.00%)
+  Maha score median : 103.89
+
+[PathAdversary]
+  Samples     : 50,000
+  Accuracy    : 0.56%
+  FNR (missed phishing) : 99.44%
+  OOD flagged : 0 (0.00%)
+  Maha score median : 39.61
+
+[TLDAdversary]
+  Samples     : 9,768
+  Accuracy    : 67.88%
+  FNR (missed phishing) : 32.12%
+  OOD flagged : 336 (3.44%)
+  Maha score median : 93.16
+

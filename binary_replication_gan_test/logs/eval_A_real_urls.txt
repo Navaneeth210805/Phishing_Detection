@@ -1,0 +1,20 @@
+============================================================
+Part A — Real Replication Package URLs
+Exp 10 model: binary_mahalanobis_ood/ (phishphresh-trained)
+============================================================
+
+Samples     : 39,339
+Accuracy    : 57.32%
+FNR         : 34.27%
+FPR         : 50.81%
+OOD flagged : 2,648 (6.73%)
+Of OOD, %phish : 96.8%
+
+              precision    recall  f1-score   support
+
+      benign       0.60      0.49      0.54     20000
+    phishing       0.56      0.66      0.60     19339
+
+    accuracy                           0.57     39339
+   macro avg       0.58      0.57      0.57     39339
+weighted avg       0.58      0.57      0.57     39339
