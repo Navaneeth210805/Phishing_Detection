@@ -1,0 +1,22 @@
+======================================================================
+GAN Evasion Report — FeatureMLP PD (2-class, feature-only)
+Reference: AlEroud & Karabatis, IWSPA '20
+======================================================================
+PD architecture       : 67 → [256, 128, 64] → 2
+PD best accuracy      : 95.52%
+
+GAN config            : G = 3×120 | D = 2×120 | 100 epochs
+Binary encoding       : 67 features × 2 bits = 134 dims
+
+Original phishing detection rate (test set) : 94.40%
+Adversarial detection rate (GAN output)     : 0.00%
+Evasion rate                                : 100.00%
+Adversarial vectors generated               : 238,729
+
+Confusion Matrix (adversarial phishing vs FeatureMLP PD):
+  Evaded PD (pred=benign)    : 238,729  (100.0%)
+  Caught by PD (pred=phish)  : 0  (0.0%)
+
+NEXT STEP: Use adversarial_dataset.csv to retrain URLPhishNet
+           so FeatureMLP learns to catch these evasion patterns.
+======================================================================
