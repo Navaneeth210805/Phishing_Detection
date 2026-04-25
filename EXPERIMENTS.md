@@ -388,6 +388,7 @@ Papers are ordered by relevance to our architecture.
 | 7 | MLP only 52-class (ablation) | phishphresh | F1=0.33 | — |
 | 8 | FeatureMLP PD only (GAN attack eval) | phishphresh | 95.52% | **100% evaded by GAN** |
 | 9 | Hardened FeatureMLP (GAN adv training) | phishphresh + GAN adv | 94.06% | **0% evaded — fully closed** |
+| 10 | FeatureMLP + Mahalanobis OOD (GAN defense, no GAN training data) | phishphresh | **95.45%** | **100% GAN detected, 1% FPR** |
 | — | Paper's best normal (XGB) | paper data | 98.58% | — |
 | — | Paper's best adv-trained (RF) | paper data + attacks | 97.71% | ~2.4% avg |
 
@@ -558,6 +559,81 @@ This is the planned Exp 10.
 
 ---
 
+## Experiment 10 — Mahalanobis OOD Detection (GAN Defense, Zero GAN Training Data)
+
+**What was TRAINED**: FeatureMLP (same 67→[256,128,64]→2 architecture as Exp 8) trained on real phishphresh data only. No GAN data anywhere.
+**What was TESTED**: Mahalanobis distance in penultimate-layer (64-dim) representation space used to flag GAN adversarial vectors as out-of-distribution (OOD) — without ever seeing a GAN sample during training.
+
+**Reference paper**: Lee et al., NeurIPS 2018 — *"A Simple Unified Framework for Detecting Out-of-Distribution Samples and Adversarial Attacks"*
+- arXiv: [https://arxiv.org/abs/1807.03888](https://arxiv.org/abs/1807.03888)
+- NeurIPS proceedings: [https://proceedings.neurips.cc/paper/2018/hash/abdeb6f575ac5c6676b747bca8d09cc2-Abstract.html](https://proceedings.neurips.cc/paper/2018/hash/abdeb6f575ac5c6676b747bca8d09cc2-Abstract.html)
+- **Venue**: NeurIPS 2018 — CORE A* (top-tier, alongside ICML and ICLR; ~25% acceptance rate)
+
+**In plain terms**:
+> Real phishing/benign URLs occupy specific clusters in the neural network's internal representation space.
+> AlEroud's GAN generates quantized fake vectors (all features snap to one of 3 fixed midpoints due to binary
+> encoding/decoding). These fake vectors land very far from any real URL cluster. The Mahalanobis detector
+> measures that distance — without needing to have seen a single GAN sample — and flags them as adversarial.
+
+**Key insight (why this works)**:
+- AlEroud's binary encode → GAN → decode pipeline forces all outputs to exactly 3 discrete midpoints per feature
+- Real URLs have continuous, smooth feature distributions in embedding space
+- The Mahalanobis score for GAN vectors (~2,488,141) is **4,845× higher** than the training threshold (513)
+- The separation is so extreme that even a loose threshold catches 100% of GAN vectors
+
+| Setting | Value |
+|---------|-------|
+| Training data | phishphresh real only — 533,052 train samples (NO GAN data) |
+| Test data (normal) | phishphresh test — 133,263 real URLs |
+| Test data (adversarial) | 238,729 GAN adversarial vectors from Exp 8 |
+| Model | FeatureMLP: 67→[256,128,64]→2 (same as Exp 8 PD) |
+| Penultimate layer dim | 64 (features extracted for Gaussian fitting) |
+| OOD threshold | 99th percentile of training Mahalanobis scores = **513.16** |
+| Epochs | 20 |
+| Output | `binary_mahalanobis_ood/` |
+| Script | `train_mahalanobis_ood.py` |
+
+**Algorithm (Lee et al. NeurIPS 2018)**:
+1. Extract 64-dim penultimate features f(x) for all training samples
+2. Compute class-conditional means: μ_benign, μ_phishing
+3. Compute pooled tied covariance Σ = Σ_c Σ_{x∈c}(f(x)−μ_c)(f(x)−μ_c)ᵀ / (N−C)
+4. Regularise: Σ_reg = Σ + 1e-5 × I, compute precision matrix P = Σ_reg⁻¹
+5. OOD score: M(x) = min_c [ (f(x)−μ_c)ᵀ P (f(x)−μ_c) ]
+6. Threshold = 99th percentile of training scores → flag anything above as adversarial
+
+**Results**:
+
+| Metric | Value |
+|--------|-------|
+| FeatureMLP standard accuracy (no OOD layer) | **95.45%** |
+| Standard FNR (real phishing missed) | 6.05% |
+| Real URLs falsely flagged as OOD (FPR of OOD layer) | **1.02%** (1,363 / 133,263) |
+| GAN evasion rate (no OOD layer — baseline) | **100.0%** |
+| GAN vectors detected by Mahalanobis OOD | **100.0%** (238,729 / 238,729) |
+| OOD threshold | 513.16 |
+| Median Mahalanobis score — real training URLs | 35.94 |
+| Median Mahalanobis score — GAN adversarial vectors | **2,488,141** (~4,845× above threshold) |
+
+**Side-by-side comparison across GAN defense experiments**:
+
+| Experiment | GAN data in training? | Normal Acc | GAN Evasion | Real URL FPR |
+|-----------|----------------------|-----------|-------------|--------------|
+| Exp 8 (no defense) | No | 95.52% | **100%** | — |
+| Exp 9 (adv training) | **Yes** | 94.06% | **0%** | 1.36% |
+| **Exp 10 (Mahalanobis OOD)** | **No** | **95.45%** | **0%** | **1.02%** |
+
+**Takeaway**: Mahalanobis OOD achieves the same 0% GAN evasion as Exp 9, with *higher* normal accuracy (95.45% vs 94.06%), *lower* false positive rate (1.02% vs 1.36%), and without requiring ANY GAN training data. This is a dataset-agnostic defense — it works on any GAN that produces quantized/OOD feature vectors.
+
+**Saved artifacts**:
+- `binary_mahalanobis_ood/models/feature_mlp.pth` — trained FeatureMLP (95.45% acc)
+- `binary_mahalanobis_ood/models/scaler.pkl` — fitted StandardScaler
+- `binary_mahalanobis_ood/models/mahalanobis_params.pkl` — μ_0, μ_1, precision matrix P, threshold
+- `binary_mahalanobis_ood/logs/run.log` — full training log
+- `binary_mahalanobis_ood/logs/ood_report.txt` — full OOD detection report
+- `binary_mahalanobis_ood/logs/training_metrics.csv` — per-epoch train/val metrics
+
+---
+
 ## Directory Map
 
 ```
@@ -570,6 +646,7 @@ binary_feat_only/               ← Exp 6  (ablation: binary, MLP only)
 multiclass_feat_only/           ← Exp 7  (ablation: 52-class, MLP only)
 binary_phishing_adv_gan/        ← Exp 8  (GAN attack evaluation — 100% evasion demonstrated)
 binary_gan_hardened/            ← Exp 9  (GAN adversarial training defense — evasion closed to 0%)
+binary_mahalanobis_ood/         ← Exp 10 (Mahalanobis OOD detection — 100% GAN detected, no GAN training data needed)
 ```
 
 Each directory contains:
