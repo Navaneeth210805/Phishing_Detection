@@ -1,0 +1,66 @@
+14:00:15  ================================================================================
+14:00:15  Experiment 10 — Mahalanobis OOD Detection (GAN Defense)
+14:00:15  Reference  : Lee et al., NeurIPS 2018  arXiv:1807.03888
+14:00:15  Device     : cuda
+14:00:15  Output     : C:\Users\nithi\Documents\Phishing_Detection\binary_mahalanobis_ood
+14:00:15  ================================================================================
+14:00:15  
+[1/7] Loading phishphresh chunks...
+14:00:15    Train chunks : 50, Test chunks : 17
+  Loading:   0%|          | 0/67 [00:00<?, ?it/s]  Loading:  24%|##3       | 16/67 [00:00<00:00, 154.51it/s]  Loading:  48%|####7     | 32/67 [00:00<00:00, 157.48it/s]  Loading:  72%|#######1  | 48/67 [00:00<00:00, 153.21it/s]  Loading:  96%|#########5| 64/67 [00:00<00:00, 148.60it/s]  Loading: 100%|##########| 67/67 [00:00<00:00, 150.62it/s]
+14:00:15    Total    : 666,315  |  Benign: 367,904  Phishing: 298,411  |  Features: 67
+14:00:15  
+[2/7] 80/20 split (RANDOM_STATE=42) + StandardScaler...
+14:00:16    Train: 533,052  Test: 133,263  Scaler saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_mahalanobis_ood\models\scaler.pkl
+14:00:16  
+[3/7] Training FeatureMLP 67 -> [256, 128, 64] -> 2  (20 epochs)...
+14:00:21    Epoch 01/20  train_loss=0.2333 acc=90.88%  |  val_loss=0.1718 acc=93.43%
+14:00:26    Epoch 02/20  train_loss=0.1888 acc=92.72%  |  val_loss=0.1581 acc=93.87%
+14:00:30    Epoch 03/20  train_loss=0.1766 acc=93.23%  |  val_loss=0.1510 acc=94.16%
+14:00:35    Epoch 04/20  train_loss=0.1685 acc=93.47%  |  val_loss=0.1445 acc=94.39%
+14:00:39    Epoch 05/20  train_loss=0.1628 acc=93.69%  |  val_loss=0.1388 acc=94.62%
+14:00:44    Epoch 06/20  train_loss=0.1600 acc=93.79%  |  val_loss=0.1360 acc=94.74%
+14:00:48    Epoch 07/20  train_loss=0.1556 acc=94.03%  |  val_loss=0.1334 acc=94.83%
+14:00:53    Epoch 08/20  train_loss=0.1524 acc=94.15%  |  val_loss=0.1311 acc=94.89%
+14:00:58    Epoch 09/20  train_loss=0.1507 acc=94.18%  |  val_loss=0.1294 acc=94.98%
+14:01:03    Epoch 10/20  train_loss=0.1489 acc=94.29%  |  val_loss=0.1284 acc=95.02%
+14:01:07    Epoch 11/20  train_loss=0.1473 acc=94.35%  |  val_loss=0.1270 acc=95.13%
+14:01:12    Epoch 12/20  train_loss=0.1460 acc=94.43%  |  val_loss=0.1262 acc=95.08%
+14:01:18    Epoch 13/20  train_loss=0.1454 acc=94.44%  |  val_loss=0.1246 acc=95.22%
+14:01:22    Epoch 14/20  train_loss=0.1435 acc=94.46%  |  val_loss=0.1248 acc=95.11%
+14:01:27    Epoch 15/20  train_loss=0.1424 acc=94.53%  |  val_loss=0.1237 acc=95.24%
+14:01:32    Epoch 16/20  train_loss=0.1392 acc=94.69%  |  val_loss=0.1214 acc=95.33%
+14:01:37    Epoch 17/20  train_loss=0.1393 acc=94.65%  |  val_loss=0.1204 acc=95.36%
+14:01:42    Epoch 18/20  train_loss=0.1398 acc=94.63%  |  val_loss=0.1206 acc=95.31%
+14:01:47    Epoch 19/20  train_loss=0.1380 acc=94.72%  |  val_loss=0.1191 acc=95.45%
+14:01:52    Epoch 20/20  train_loss=0.1378 acc=94.73%  |  val_loss=0.1180 acc=95.47%
+14:01:52    Model saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_mahalanobis_ood\models\feature_mlp.pth
+14:01:52  
+[4/7] Extracting 64-dim penultimate features for all training samples...
+14:01:53    Training feature matrix : (533052, 64)  (N_train x 64)
+14:01:53  
+[5/7] Fitting class-conditional Gaussians (Lee et al. NeurIPS 2018)...
+14:01:53    mu_0 (benign)   norm : 3.9341
+14:01:53    mu_1 (phishing) norm : 4.6598
+14:01:53    Precision matrix shape : (64, 64)
+14:01:56    Training score stats : min=5.11  median=38.72  max=251895.20
+14:01:56    OOD threshold (99.0th-pct) : 446.5667
+14:01:56    Mahalanobis params saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_mahalanobis_ood\models\mahalanobis_params.pkl
+14:01:56  
+[6/7] Evaluating on real phishphresh test set...
+14:01:57    Standard accuracy      : 95.47%
+14:01:57    Standard FNR           : 6.01%
+14:01:57    OOD-flagged real URLs  : 1,382 / 133,263 (1.04%)
+14:01:57    Of those, % phishing   : 71.4%  (high = OOD layer is alerting on borderline phishing)
+14:01:57  
+[7/7] Evaluating on GAN adversarial vectors from Exp 8...
+14:01:58    GAN adversarial samples : 238,729  (features: 67)
+14:02:00    GAN evasion (no OOD)    : 238,729 / 238,729 (100.0%) evaded as benign
+14:02:00    OOD detected (Mahala)   : 238,729 / 238,729 (100.0%) flagged as OOD/adversarial
+14:02:00    Adv score stats : min=6924815.72  median=6924816.22  max=6924816.22
+14:02:00    Training threshold : 446.5667
+14:02:00  
+OOD report saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_mahalanobis_ood\logs\ood_report.txt
+14:02:00  ================================================================================
+14:02:00  Experiment 10 complete.
+14:02:00  ================================================================================

@@ -1,0 +1,21 @@
+============================================================
+Experiment 12 — Exact Paper GAN + Mahalanobis OOD
+GAN loss: Exact Eq 3 + Eq 4 from AlEroud 2020
+============================================================
+
+GAN TRAINING
+  Loss formula : Exact paper Eq 3 (D) + Eq 4 (G)
+  D output     : P(legitimate|f)
+  G reward     : E[log D(G)]  — NEGATIVE, paper-style
+  Final G_reward (epoch 100): -0.0000
+  Final D_reward (epoch 100): -0.0642
+
+EVASION (exact-paper GAN vs FeatureMLP PD)
+  Adversarial vectors : 238,729
+  Evasion rate        : 0.0%
+
+MAHALANOBIS OOD DETECTION (Exp 10 model, no retraining)
+  OOD detected        : 238,729/238,729 (100.0%)
+  Adv score median    : 61962.05
+  OOD threshold       : 446.5667
+  Score / threshold   : 139x above

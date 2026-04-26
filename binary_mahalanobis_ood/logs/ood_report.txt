@@ -6,21 +6,21 @@ Reference: Lee et al., NeurIPS 2018  arXiv:1807.03888
 MODEL
   Architecture      : 67 -> [256, 128, 64] -> 2
   Penultimate dim   : 64
-  OOD threshold     : 513.1637  (99.0th pct)
+  OOD threshold     : 446.5667  (99.0th pct)
 
 REAL PHISHPHRESH TEST SET
   Test samples      : 133,263
-  Standard accuracy : 95.45%
-  Standard FNR      : 6.05%
-  OOD-flagged URLs  : 1,363  (1.02%)
-  Of OOD, % phishing: 69.9%
+  Standard accuracy : 95.47%
+  Standard FNR      : 6.01%
+  OOD-flagged URLs  : 1,382  (1.04%)
+  Of OOD, % phishing: 71.4%
 
 GAN ADVERSARIAL VECTORS (Exp 8)
   Adversarial count : 238,729
   Evasion (no OOD)  : 100.0%
   OOD detected      : 100.0%
-  Adv score median  : 2488141.9616
-  Train score median: 35.9428
+  Adv score median  : 6924816.2213
+  Train score median: 38.7236
 
 CLASSIFICATION REPORT (real test)
               precision    recall  f1-score   support
@@ -29,5 +29,5 @@ CLASSIFICATION REPORT (real test)
     phishing       0.96      0.94      0.95     59682
 
     accuracy                           0.95    133263
-   macro avg       0.95      0.95      0.95    133263
+   macro avg       0.96      0.95      0.95    133263
 weighted avg       0.95      0.95      0.95    133263

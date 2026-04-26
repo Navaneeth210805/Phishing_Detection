@@ -1,0 +1,66 @@
+14:00:08  ================================================================================
+14:00:08  Exp 9 — Hardened FeatureMLP (GAN Adversarial Training Defense)
+14:00:08  Injects GAN adversarial vectors from Exp 8 into training.
+14:00:08  Goal: does adversarial training close the 100% evasion gap?
+14:00:08  Device : cuda
+14:00:08  Output : C:\Users\nithi\Documents\Phishing_Detection\binary_gan_hardened
+14:00:08  ================================================================================
+14:00:08  
+[1/5] Loading phishphresh chunks...
+  Loading:   0%|          | 0/67 [00:00<?, ?it/s]  Loading:  25%|##5       | 17/67 [00:00<00:00, 165.82it/s]  Loading:  51%|#####     | 34/67 [00:00<00:00, 166.26it/s]  Loading:  76%|#######6  | 51/67 [00:00<00:00, 167.51it/s]  Loading: 100%|##########| 67/67 [00:00<00:00, 165.28it/s]
+14:00:09    Real data : 666,315  (benign=367,904  phishing=298,411)
+14:00:09    Train : 533,052  Test : 133,263
+14:00:09  
+[2/5] Loading GAN adversarial dataset (from Exp 8)...
+14:00:09    Adversarial vectors : 238,729  (all label=1/phishing)
+14:00:09    Feature dim         : 67
+14:00:09  
+[3/5] Combining real train + adversarial vectors...
+14:00:10    Real    : 533,052  (benign=294,323  phishing=238,729)
+14:00:10    GAN adv : 238,729  (all phishing)
+14:00:10    Combined: 771,781  (benign=294,323  phishing=477,458)
+14:00:10    Scaler saved
+14:00:10  
+[4/5] Training hardened FeatureMLP (20 epochs)...
+14:00:10    Architecture : 67 -> [256, 128, 64] -> 2
+14:00:10    This model has SEEN GAN adversarial vectors during training.
+14:00:39    Epoch  5/20  acc=93.44%  F1=0.9327  MCC=0.8708  FPR=1.20%  FNR=13.17%
+14:01:10    Epoch 10/20  acc=94.04%  F1=0.9390  MCC=0.8820  FPR=1.34%  FNR=11.66%
+14:01:41    Epoch 15/20  acc=94.10%  F1=0.9397  MCC=0.8837  FPR=1.10%  FNR=11.80%
+14:02:10    Epoch 20/20  acc=94.14%  F1=0.9401  MCC=0.8845  FPR=1.05%  FNR=11.79%
+14:02:10    Best accuracy : 94.34%
+14:02:10  
+[5/5] Evaluating hardened model...
+14:02:10  
+  Normal test results:
+14:02:10      Accuracy : 94.34%
+14:02:10      F1-Macro : 0.9422
+14:02:10      MCC      : 0.8880
+14:02:10      FPR      : 1.23%
+14:02:10      FNR      : 11.11%
+14:02:10  
+  GAN adversarial evasion (KEY RESULT vs Exp 8):
+14:02:10      Adversarial vectors tested : 238,729
+14:02:10      Correctly caught (phishing): 238,729  (100.00%)
+14:02:10      Still evading (benign pred): 0  (0.00%)
+14:02:10      Evasion rate BEFORE hardening (Exp 8): 100.00%
+14:02:10      Evasion rate AFTER  hardening (Exp 9): 0.00%
+14:02:10  
+  Side-by-side comparison:
+14:02:10      Unhardened FeatureMLP (Exp 8) evasion: 100.00%
+14:02:10      Hardened   FeatureMLP (Exp 9) evasion: 0.00%
+14:02:10      Reduction in evasion                : -100.00%
+14:02:10  
+================================================================================
+14:02:10  SUMMARY — Exp 9 Hardened FeatureMLP
+14:02:10  ================================================================================
+14:02:10    Normal accuracy (test)   : 94.34%  (Exp 8 baseline: 95.52%)
+14:02:10    F1-Macro                 : 0.9422
+14:02:10    MCC                      : 0.8880
+14:02:10    FPR                      : 1.23%
+14:02:10    FNR                      : 11.11%
+14:02:10    GAN evasion BEFORE       : 100.00%  (Exp 8)
+14:02:10    GAN evasion AFTER        : 0.00%  (this exp)
+14:02:10    Adversarial dataset used : C:\Users\nithi\Documents\Phishing_Detection\binary_phishing_adv_gan\logs\adversarial_dataset.csv
+14:02:10  ================================================================================
+14:02:10  Done.

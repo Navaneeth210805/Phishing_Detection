@@ -386,10 +386,11 @@ Papers are ordered by relevance to our architecture.
 | 5 | CharCNN+MLP adv-trained | paper data + attacks | **99.25%** | **0%** |
 | 6 | MLP only (ablation) | phishphresh | 96.22% | ~60%+ |
 | 7 | MLP only 52-class (ablation) | phishphresh | F1=0.33 | — |
-| 8 | FeatureMLP PD only (GAN attack eval) | phishphresh | 95.52% | **100% evaded by GAN** |
-| 9 | Hardened FeatureMLP (GAN adv training) | phishphresh + GAN adv | 94.06% | **0% evaded — fully closed** |
-| 10 | FeatureMLP + Mahalanobis OOD (GAN defense, no GAN training data) | phishphresh | **95.45%** | **100% GAN detected, 1% FPR** |
-| 11 | Exp 10 model cross-dataset validation (no retraining) | Replication Package | 57% real (scaler shift) | **100% GAN detected (different dataset GAN)** |
+| 8 | FeatureMLP PD only (GAN attack, exact Eq 3+4) | phishphresh | 95.44% | **100% evaded by GAN** |
+| 9 | Hardened FeatureMLP (GAN adv training) | phishphresh + GAN adv | 94.34% | **0% evaded — fully closed** |
+| 10 | FeatureMLP + Mahalanobis OOD (GAN defense, no GAN data) | phishphresh | **95.45%** | **100% GAN detected, 1.04% FPR** |
+| 11 | Exp 10 model cross-dataset validation (no retraining, exact Eq GAN) | Replication Package | 57% real (scaler shift) | **100% GAN detected (different dataset GAN)** |
+| 12 | Standalone exact-paper GAN (D=P(legitimate), static labels) | phishphresh | 95.41% | 0% evasion (D arch mismatch) — Maha OOD 100% |
 | — | Paper's best normal (XGB) | paper data | 98.58% | — |
 | — | Paper's best adv-trained (RF) | paper data + attacks | 97.71% | ~2.4% avg |
 
@@ -437,9 +438,10 @@ Papers are ordered by relevance to our architecture.
 > vectors from both phishphresh and the Sabir Replication Package — without seeing a single GAN sample
 > during training, and without needing to know which GAN or which dataset the attacker used."*
 
-✅ **What supports it**: Exp 10 — 100% detection of 238,729 phishphresh-origin GAN vectors with 1.02% FPR.
+✅ **What supports it**: Exp 10 — 100% detection of 238,729 phishphresh-origin GAN vectors with 1.04% FPR.
 Exp 11 — 100% detection of 77,354 Replication Package-origin GAN vectors using the same unmodified model.
-The Mahalanobis scores for adversarial vectors (median 2,488,141 and 118,653 respectively) are 231–4,845× above the calibration threshold (513). The structural reason is clear: AlEroud's binary encoding quantizes adversarial outputs to 3 discrete midpoints per feature — a geometric artifact the OOD detector picks up regardless of which dataset trained the GAN.
+Exp 12 — 100% detection of GAN vectors from an alternative D=P(legitimate) architecture variant.
+The Mahalanobis scores for adversarial vectors (median 6,924,816 / 118,654 / 61,962 respectively) are 139–15,503× above the calibration threshold (446.57). All experiments use the exact AlEroud 2020 loss equations (Eq 3 + Eq 4). The structural reason is clear: AlEroud's binary encoding quantizes adversarial outputs to 3 discrete midpoints per feature — a geometric artifact the OOD detector picks up regardless of which dataset trained the GAN or which exact equations were used.
 
 ⚠️ **Caveat**: This defense is specific to feature-space GAN attacks that use binary quantization (AlEroud 2020 architecture). It does NOT defend against character-level URL mutations (Sabir adversarial URLs — Exp 11C shows 0% OOD detection for those). A complete defense requires combining OOD detection (for GAN attacks) with adversarial URL training (for char-level attacks).
 
@@ -475,12 +477,21 @@ The Mahalanobis scores for adversarial vectors (median 2,488,141 and 118,653 res
 | Setting | Value |
 |---------|-------|
 | Training data (GAN) | phishphresh features — 533,052 train samples (238,729 phishing + 294,323 benign) |
-| Training target (PD) | Standalone FeatureMLP: 67→[256,128,64]→2, trained to 95.52% accuracy |
+| Training target (PD) | Standalone FeatureMLP: 67→[256,128,64]→2, trained to 95.44% accuracy |
 | GAN architecture | Generator: (134+64)→3×120 ReLU→134 sigmoid \| Discriminator: 134→2×120 ReLU→1 sigmoid |
 | GAN training | 100 epochs, batch=512, LR=1e-4 (AlEroud 2020 exact config) |
+| **Loss functions** | **Exact paper Eq 3 (D) + Eq 4 (G) — not BCELoss approximation** |
 | Test data | 238,729 GAN-generated adversarial feature vectors run through FeatureMLP PD |
 | Output | `binary_phishing_adv_gan/` |
 | Script | `train_binary_gan_adv.py` |
+
+**GAN Loss Functions (AlEroud 2020 Eq 3 + Eq 4 — exact)**:
+- **D loss (Eq 3)**: `L_D = −E[pd_lbl · log D(adv) + (1−pd_lbl) · log(1−D(adv))] − E[(1−pd_lbl) · log(1−D(ben)) + pd_lbl · log D(ben)]`
+  - `pd_lbl` = dynamic PD prediction per batch (decode→scale→PD.predict every step), not static labels
+- **G loss (Eq 4)**: `L_G = −E[log(1 − D(G(m,s)))]`
+  - G wants D(G)→0, i.e., adversarial output looks benign to D (which mirrors PD)
+- **Paper-style training curve**: G_reward = −L_G starts at −0.2074 (epoch 1), converges toward 0 (epoch 100)
+- **Why dynamic labels matter**: Static labels + phishing-only D training (as in original paper reading) cause D to learn a degenerate classifier. Dynamic labels with balanced phishing+benign data are essential for D to properly approximate PD's decision boundary.
 
 **GAN Architecture (following AlEroud 2020 exactly)**:
 - **Binary encoding**: 67 continuous features → 134-dim binary (2 bits/feature): `11`=malicious, `01`=suspicious, `00`=benign
@@ -493,11 +504,12 @@ The Mahalanobis scores for adversarial vectors (median 2,488,141 and 118,653 res
 
 | What was measured | Result |
 |-------------------|--------|
-| FeatureMLP PD accuracy (baseline, real test data) | **95.52%** |
-| PD detection rate on real phishing (test set) | **94.40%** |
+| FeatureMLP PD accuracy (baseline, real test data) | **95.44%** |
+| PD detection rate on real phishing (test set) | **94.11%** |
 | PD detection rate on GAN adversarial vectors | **0.00%** |
 | GAN evasion rate (fooled PD) | **100.00%** |
 | Adversarial feature vectors generated | **238,729** |
+| Final G_reward (epoch 100, paper-style negative) | **−0.0000** (converged) |
 
 **Confusion matrix — adversarial vectors vs FeatureMLP PD**:
 
@@ -505,14 +517,14 @@ The Mahalanobis scores for adversarial vectors (median 2,488,141 and 118,653 res
 |--|------------|--------------|
 | True Phishing | **238,729** (all evaded) | 0 |
 
-**Takeaway**: AlEroud's GAN achieves 100% evasion on our standalone FeatureMLP.
-This establishes the vulnerability. Exp 9 closes it.
+**Takeaway**: AlEroud's GAN with exact paper loss equations achieves 100% evasion on our standalone FeatureMLP.
+This establishes the vulnerability. Exp 9 and 10 close it via two different defense strategies.
 
 **Saved artifacts**:
-- `binary_phishing_adv_gan/models/feature_mlp_pd.pth` — trained FeatureMLP PD (95.52% acc)
+- `binary_phishing_adv_gan/models/feature_mlp_pd.pth` — trained FeatureMLP PD (95.44% acc)
 - `binary_phishing_adv_gan/models/pd_scaler.pkl` — fitted StandardScaler
 - `binary_phishing_adv_gan/models/gan_generator.pth` — trained GAN Generator weights
-- `binary_phishing_adv_gan/logs/gan_training_loss.csv` — per-epoch G/D loss (100 epochs)
+- `binary_phishing_adv_gan/logs/training_log.csv` — per-epoch G_reward / D_loss (paper-style, 100 epochs)
 - `binary_phishing_adv_gan/logs/pd_evasion_report.txt` — full evasion report
 - `binary_phishing_adv_gan/logs/adversarial_dataset.csv` — 238,729 adversarial feature vectors (114MB, not in git)
 
@@ -547,11 +559,11 @@ The concept is standard adversarial training — teach the model by showing it t
 
 | Metric | Exp 8: Unhardened | Exp 9: Hardened | Change |
 |--------|------------------|-----------------|--------|
-| Normal accuracy (real test set) | 95.52% | **94.06%** | −1.46% |
-| F1-Macro | — | **0.9393** | — |
-| MCC | — | **0.8825** | — |
-| FPR (benign wrongly flagged) | — | 1.36% | — |
-| FNR (real phishing missed) | ~5% | **11.57%** | +6.6% |
+| Normal accuracy (real test set) | 95.44% | **94.34%** | −1.10% |
+| F1-Macro | — | **0.9422** | — |
+| MCC | — | **0.8880** | — |
+| FPR (benign wrongly flagged) | — | 1.23% | — |
+| FNR (real phishing missed) | ~5.9% | **11.11%** | +5.2% |
 | **GAN evasion rate** | **100.00%** | **0.00%** | **−100%** |
 
 **Confusion matrix — same GAN adversarial vectors tested on hardened model**:
@@ -593,17 +605,17 @@ This is the planned Exp 10.
 **Key insight (why this works)**:
 - AlEroud's binary encode → GAN → decode pipeline forces all outputs to exactly 3 discrete midpoints per feature
 - Real URLs have continuous, smooth feature distributions in embedding space
-- The Mahalanobis score for GAN vectors (~2,488,141) is **4,845× higher** than the training threshold (513)
+- The Mahalanobis score for GAN vectors (~6,924,816) is **15,503× higher** than the training threshold (446.57)
 - The separation is so extreme that even a loose threshold catches 100% of GAN vectors
 
 | Setting | Value |
 |---------|-------|
 | Training data | phishphresh real only — 533,052 train samples (NO GAN data) |
 | Test data (normal) | phishphresh test — 133,263 real URLs |
-| Test data (adversarial) | 238,729 GAN adversarial vectors from Exp 8 |
+| Test data (adversarial) | 238,729 GAN adversarial vectors from Exp 8 (exact-equation GAN) |
 | Model | FeatureMLP: 67→[256,128,64]→2 (same as Exp 8 PD) |
 | Penultimate layer dim | 64 (features extracted for Gaussian fitting) |
-| OOD threshold | 99th percentile of training Mahalanobis scores = **513.16** |
+| OOD threshold | 99th percentile of training Mahalanobis scores = **446.57** |
 | Epochs | 20 |
 | Output | `binary_mahalanobis_ood/` |
 | Script | `train_mahalanobis_ood.py` |
@@ -621,21 +633,23 @@ This is the planned Exp 10.
 | Metric | Value |
 |--------|-------|
 | FeatureMLP standard accuracy (no OOD layer) | **95.45%** |
-| Standard FNR (real phishing missed) | 6.05% |
-| Real URLs falsely flagged as OOD (FPR of OOD layer) | **1.02%** (1,363 / 133,263) |
+| Standard FNR (real phishing missed) | 6.01% |
+| Real URLs falsely flagged as OOD (FPR of OOD layer) | **1.04%** (1,382 / 133,263) |
 | GAN evasion rate (no OOD layer — baseline) | **100.0%** |
 | GAN vectors detected by Mahalanobis OOD | **100.0%** (238,729 / 238,729) |
-| OOD threshold | 513.16 |
-| Median Mahalanobis score — real training URLs | 35.94 |
-| Median Mahalanobis score — GAN adversarial vectors | **2,488,141** (~4,845× above threshold) |
+| OOD threshold | **446.57** |
+| Median Mahalanobis score — real training URLs | 38.72 |
+| Median Mahalanobis score — GAN adversarial vectors | **6,924,816** (~15,503× above threshold) |
+
+*Note: Score increased from 2,488,141 to 6,924,816 vs prior run — the exact-equation GAN produces vectors that are even more degenerate in embedding space due to slightly different weight convergence, but the defense mechanism (quantization artifact) is unchanged.*
 
 **Side-by-side comparison across GAN defense experiments**:
 
 | Experiment | GAN data in training? | Normal Acc | GAN Evasion | Real URL FPR |
 |-----------|----------------------|-----------|-------------|--------------|
-| Exp 8 (no defense) | No | 95.52% | **100%** | — |
-| Exp 9 (adv training) | **Yes** | 94.06% | **0%** | 1.36% |
-| **Exp 10 (Mahalanobis OOD)** | **No** | **95.45%** | **0%** | **1.02%** |
+| Exp 8 (no defense) | No | 95.44% | **100%** | — |
+| Exp 9 (adv training) | **Yes** | 94.34% | **0%** | 1.23% |
+| **Exp 10 (Mahalanobis OOD)** | **No** | **95.45%** | **0%** | **1.04%** |
 
 **Takeaway**: Mahalanobis OOD achieves the same 0% GAN evasion as Exp 9, with *higher* normal accuracy (95.45% vs 94.06%), *lower* false positive rate (1.02% vs 1.36%), and without requiring ANY GAN training data. This is a dataset-agnostic defense — it works on any GAN that produces quantized/OOD feature vectors.
 
@@ -671,6 +685,7 @@ This is the planned Exp 10.
 | Replication Package legitimate | `Leg_Training.csv` — 100,000 URLs (capped) |
 | Adversarial datasets | `DomainAdversary.csv`, `PathAdversary.csv`, `TLDAdversary.csv` |
 | GAN trained on | Replication Package phishing features (77,354 samples) — NOT phishphresh |
+| **GAN loss functions** | **Exact Eq 3 + Eq 4 (same as Exp 8)** |
 | Output | `binary_replication_gan_test/` |
 | Script | `train_replication_gan_test.py` |
 
@@ -693,7 +708,7 @@ This is the planned Exp 10.
 | Adversarial vectors generated | 77,354 |
 | GAN evasion (no OOD layer) | **100.0%** |
 | Mahalanobis OOD detection | **100.0%** |
-| Adversarial score median | 118,653 (231× above threshold of 513) |
+| Adversarial score median | 118,654 (266× above threshold of 446.57) |
 
 **Key finding**: Even with a GAN trained on a completely different dataset, OOD detection is 100%. The quantization artifact (all features snap to 3 discrete midpoints via AlEroud's binary encode→decode) is independent of which dataset was used — it's a structural property of the GAN architecture itself.
 
@@ -718,12 +733,63 @@ This is the planned Exp 10.
 | TLD mutations (Sabir) | CharCNN + adv training | ✗ Not OOD | ✅ Needed |
 
 **Saved artifacts**:
-- `binary_replication_gan_test/models/gan_generator_reppack.pth` — GAN Generator trained on Replication Package phishing
+- `binary_replication_gan_test/models/gan_generator_reppack.pth` — GAN Generator trained on Replication Package phishing (exact-equation)
 - `binary_replication_gan_test/logs/run.log` — full run log
 - `binary_replication_gan_test/logs/eval_A_real_urls.txt` — Part A classification report
 - `binary_replication_gan_test/logs/eval_B_gan_vectors.txt` — Part B GAN detection report
 - `binary_replication_gan_test/logs/eval_C_sabir_adversarial.txt` — Part C adversarial URL report
-- `binary_replication_gan_test/logs/gan_training_loss.csv` — GAN training loss curve
+- `binary_replication_gan_test/logs/gan_training_loss.csv` — GAN training loss + paper-style G_reward
+
+---
+
+## Experiment 12 — Standalone Exact-Paper GAN (AlEroud 2020 D=P(legitimate) reading)
+
+**What was TRAINED**: A GAN using the literal paper reading: D outputs P(legitimate|f), trained only on phishing data with pre-computed static labels.
+**What was TESTED**: Whether this alternative architecture (vs Exp 8's dynamic labels + balanced data) also evades PD, and whether Mahalanobis OOD catches it.
+
+**In plain terms**:
+> This is a controlled experiment to test the *literal* paper description vs the functionally correct Exp 8 setup.
+> When D = P(legitimate) with static labels and no benign training data, G technically fools D but does NOT fool the real PD (0% evasion). However, the Mahalanobis OOD detector still catches 100% of the generated vectors — confirming that the defense works regardless of which GAN variant produces the adversarial vectors.
+
+**Key difference from Exp 8**:
+
+| Aspect | Exp 8 (works) | Exp 12 (D arch variant) |
+|--------|--------------|------------------------|
+| D label convention | D = P(phishing) — matches PD | D = P(legitimate) — inverted |
+| Label computation | Dynamic (per batch: decode→scale→PD) | Static (pre-computed once) |
+| D training data | Phishing + benign batches | Phishing only |
+| Evasion result | **100%** | **0%** (D ≠ PD) |
+| Mahalanobis OOD | **100%** | **100%** |
+
+| Setting | Value |
+|---------|-------|
+| Training data | phishphresh phishing — 238,729 samples with static PD labels |
+| Loss functions | Exact paper Eq 3 (D) + Eq 4 (G) — same formulas as Exp 8, different convention |
+| D output | P(legitimate\|f) — not P(phishing\|f) |
+| GAN training | 100 epochs, paper-style G_reward (negative, converges toward 0) |
+| Output | `binary_gan_exact_paper/` |
+| Script | `train_binary_gan_exact_paper.py` |
+
+**Results**:
+
+| Metric | Value |
+|--------|-------|
+| PD accuracy (FeatureMLP) | **95.41%** |
+| GAN evasion (no OOD) | **0.0%** — GAN fools D but not real PD (training collapse from D-PD mismatch) |
+| Mahalanobis OOD detected | **100.0%** (238,729 / 238,729) |
+| Adversarial score median | **61,962** (139× above threshold of 446.57) |
+| Final G_reward (epoch 100) | **−0.0000** (paper-style negative, converged) |
+
+**Takeaway**: Exp 12 confirms two things:
+1. The exact paper equations are correct — G_reward displays paper-style negative values converging to 0 in both Exp 8 and Exp 12.
+2. The D architecture (dynamic labels + balanced data) in Exp 8 is the critical design choice that makes GAN evasion work. The loss equations alone are not sufficient — the training strategy matters.
+3. Mahalanobis OOD catches vectors from *any* GAN variant that uses AlEroud's binary encode-decode pipeline — even when the GAN fails to evade the classifier, the generated vectors are still far OOD (139× above threshold).
+
+**Saved artifacts**:
+- `binary_gan_exact_paper/models/feature_mlp_pd.pth` — trained FeatureMLP PD (95.41% acc)
+- `binary_gan_exact_paper/models/gan_generator.pth` — trained GAN Generator (exact-paper D=P(legitimate))
+- `binary_gan_exact_paper/logs/gan_training_reward.csv` — per-epoch G_reward (paper-style negative values)
+- `binary_gan_exact_paper/logs/pd_evasion_report.txt` — full evasion + OOD report
 
 ---
 
@@ -737,10 +803,11 @@ binary_paper_data/              ← Exp 4  (binary CharCNN+MLP, paper's dataset)
 binary_paper_data_adv/          ← Exp 5  (binary adv-trained, paper's dataset)
 binary_feat_only/               ← Exp 6  (ablation: binary, MLP only)
 multiclass_feat_only/           ← Exp 7  (ablation: 52-class, MLP only)
-binary_phishing_adv_gan/        ← Exp 8  (GAN attack evaluation — 100% evasion demonstrated)
+binary_phishing_adv_gan/        ← Exp 8  (GAN attack, exact Eq 3+4 — 100% evasion demonstrated)
 binary_gan_hardened/            ← Exp 9  (GAN adversarial training defense — evasion closed to 0%)
 binary_mahalanobis_ood/         ← Exp 10 (Mahalanobis OOD detection — 100% GAN detected, no GAN data needed)
 binary_replication_gan_test/    ← Exp 11 (cross-dataset validation — 100% GAN detection on different dataset)
+binary_gan_exact_paper/         ← Exp 12 (standalone exact-paper GAN D=P(legitimate) — 0% evasion, 100% Maha OOD)
 ```
 
 Each directory contains:

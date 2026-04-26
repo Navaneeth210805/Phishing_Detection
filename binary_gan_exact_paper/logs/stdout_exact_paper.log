@@ -1,0 +1,120 @@
+14:00:25  ================================================================================
+14:00:25  Experiment 12 — GAN with EXACT Paper Loss Functions (AlEroud 2020)
+14:00:25    D loss: Eq 3  L_D = -E[log D(f)] - E[log(1-D(f))]  (D = P(legitimate))
+14:00:25    G loss: Eq 4  L_G = -E[log D(G(m,s))]
+14:00:25    Display: raw reward E[log D(G)] — NEGATIVE values, paper-style
+14:00:25  Device : cuda
+14:00:25  ================================================================================
+14:00:25  
+[1/6] Loading phishphresh chunks...
+  Loading:   0%|          | 0/67 [00:00<?, ?it/s]  Loading:  22%|##2       | 15/67 [00:00<00:00, 144.16it/s]  Loading:  46%|####6     | 31/67 [00:00<00:00, 150.69it/s]  Loading:  70%|#######   | 47/67 [00:00<00:00, 151.20it/s]  Loading:  94%|#########4| 63/67 [00:00<00:00, 150.15it/s]  Loading: 100%|##########| 67/67 [00:00<00:00, 150.27it/s]
+14:00:26    Total: 666,315  Benign=367,904  Phishing=298,411  Features=67
+14:00:26  
+[2/6] 80/20 split + StandardScaler...
+14:00:26    Train=533,052  Test=133,263
+14:00:26  
+[3/6] Training FeatureMLP PD (20 epochs)...
+14:00:32    Epoch 01/20  val_acc=93.51%
+14:00:36    Epoch 02/20  val_acc=94.06%
+14:00:41    Epoch 03/20  val_acc=94.31%
+14:00:45    Epoch 04/20  val_acc=94.53%
+14:00:49    Epoch 05/20  val_acc=94.55%
+14:00:54    Epoch 06/20  val_acc=94.80%
+14:00:58    Epoch 07/20  val_acc=94.85%
+14:01:03    Epoch 08/20  val_acc=94.92%
+14:01:08    Epoch 09/20  val_acc=94.96%
+14:01:12    Epoch 10/20  val_acc=95.08%
+14:01:17    Epoch 11/20  val_acc=95.07%
+14:01:22    Epoch 12/20  val_acc=95.11%
+14:01:26    Epoch 13/20  val_acc=95.17%
+14:01:31    Epoch 14/20  val_acc=95.26%
+14:01:35    Epoch 15/20  val_acc=95.31%
+14:01:40    Epoch 16/20  val_acc=95.36%
+14:01:45    Epoch 17/20  val_acc=95.28%
+14:01:50    Epoch 18/20  val_acc=94.94%
+14:01:54    Epoch 19/20  val_acc=95.39%
+14:01:58    Epoch 20/20  val_acc=95.41%
+14:01:58    PD saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_gan_exact_paper\models\feature_mlp_pd.pth
+14:01:58  
+[4/6] Training GAN with EXACT paper equations (100 epochs)...
+14:01:58    D outputs P(legitimate|f) — Eq 4 requires D(G) -> 1 when G fools D
+14:01:58    DISPLAY: raw reward E[log D(G)]  — NEGATIVE values, converges toward 0
+14:01:58    Phishing training samples : 238,729
+14:01:58    PD detects as phishing    : 223,368 (93.6%)
+14:01:59    Binary dim: 134  GAN input: (238729, 134)
+14:02:02    Epoch 001/100 | G_reward=-0.7716  D_reward=-0.2654  (G_loss=0.7738  D_loss=0.2666)
+14:02:02      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:02:24    Epoch 010/100 | G_reward=-0.0011  D_reward=-0.0997  (G_loss=0.0011  D_loss=0.1000)
+14:02:24      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:02:45    Epoch 020/100 | G_reward=-0.0002  D_reward=-0.0854  (G_loss=0.0002  D_loss=0.0858)
+14:02:45      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:03:05    Epoch 030/100 | G_reward=-0.0001  D_reward=-0.0795  (G_loss=0.0001  D_loss=0.0800)
+14:03:05      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:03:26    Epoch 040/100 | G_reward=-0.0001  D_reward=-0.0758  (G_loss=0.0001  D_loss=0.0762)
+14:03:26      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:03:47    Epoch 050/100 | G_reward=-0.0000  D_reward=-0.0730  (G_loss=0.0000  D_loss=0.0734)
+14:03:47      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:04:07    Epoch 060/100 | G_reward=-0.0000  D_reward=-0.0709  (G_loss=0.0000  D_loss=0.0715)
+14:04:07      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:04:28    Epoch 070/100 | G_reward=-0.0000  D_reward=-0.0689  (G_loss=0.0000  D_loss=0.0695)
+14:04:28      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:04:49    Epoch 080/100 | G_reward=-0.0000  D_reward=-0.0671  (G_loss=0.0000  D_loss=0.0676)
+14:04:49      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:05:09    Epoch 090/100 | G_reward=-0.0000  D_reward=-0.0657  (G_loss=0.0000  D_loss=0.0664)
+14:05:09      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:05:30    Epoch 100/100 | G_reward=-0.0000  D_reward=-0.0642  (G_loss=0.0000  D_loss=0.0648)
+14:05:30      ^ Paper-style display: G_reward and D_reward are NEGATIVE (converge toward 0 as training succeeds)
+14:05:30    GAN saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_gan_exact_paper\models\gan_generator.pth
+14:05:30    Reward log -> C:\Users\nithi\Documents\Phishing_Detection\binary_gan_exact_paper\logs\gan_training_reward.csv  (G_reward column shows paper-style negative values)
+14:05:30  
+[5/6] Generating adversarial feature vectors...
+14:05:31    Generated 238,729 adversarial feature vectors
+14:05:31    Evasion (no defense): 0/238,729 = 0.0%
+14:05:34    Adversarial dataset saved -> C:\Users\nithi\Documents\Phishing_Detection\binary_gan_exact_paper\logs\adversarial_dataset_v2.csv
+14:05:34  
+[6/6] Running Exp 10 Mahalanobis OOD on new adversarial vectors...
+14:05:34    (Exp 10 model NOT retrained — loaded as-is from binary_mahalanobis_ood/)
+14:05:34    Loaded Exp 10 model  threshold=446.5667
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\nithi\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nithi\Documents\Phishing_Detection\train_binary_gan_exact_paper.py", line 83, in write
+    for f in self.files: f.write(obj); f.flush()
+                         ~~~~~~~^^^^^
+  File "C:\Users\nithi\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 14-61: character maps to <undefined>
+Call stack:
+  File "C:\Users\nithi\Documents\Phishing_Detection\train_binary_gan_exact_paper.py", line 543, in <module>
+    log.info(f"\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")
+Message: '\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+14:05:36    GAN adversarial vectors  : 238,729
+14:05:36    GAN evasion (no OOD)     : 0.0%
+14:05:36    Mahalanobis OOD detected : 238,729/238,729 (100.0%)
+14:05:36    Adv score median         : 61962.05
+14:05:36    Adv score min/max        : 61962.05 / 61962.05
+14:05:36    OOD threshold            : 446.5667
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\nithi\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1154, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nithi\Documents\Phishing_Detection\train_binary_gan_exact_paper.py", line 83, in write
+    for f in self.files: f.write(obj); f.flush()
+                         ~~~~~~~^^^^^
+  File "C:\Users\nithi\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 12-59: character maps to <undefined>
+Call stack:
+  File "C:\Users\nithi\Documents\Phishing_Detection\train_binary_gan_exact_paper.py", line 551, in <module>
+    log.info(f"  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")
+Message: '  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550'
+Arguments: ()
+14:05:36  ================================================================================
+14:05:36  Experiment 12 complete.
+14:05:36  ================================================================================

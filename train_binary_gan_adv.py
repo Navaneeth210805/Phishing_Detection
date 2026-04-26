@@ -410,6 +410,7 @@ if __name__ == "__main__":
     opt_G = torch.optim.Adam(G.parameters(), lr=GAN_LR, eps=1e-5)
     opt_D = torch.optim.Adam(D.parameters(), lr=GAN_LR, eps=1e-5)
     bce   = nn.BCELoss()
+    EPS   = 1e-8  # numerical stability for exact paper log losses
 
     # Pre-load tensors onto device
     X_phish_t  = torch.from_numpy(X_phish_bin).float().to(device)
@@ -457,18 +458,28 @@ if __name__ == "__main__":
                 ).unsqueeze(1).to(device)
 
             # ── Train Discriminator (match PD predictions) ────────────────────
-            # Loss (eq 3): D learns to mimic PD on adversarial + benign samples
+            # Exact Eq 3 (AlEroud 2020): L_D = -E[log D(legitimate)] - E[log(1-D(phishing))]
+            # D outputs P(phishing|f). PD labels: 1=phishing, 0=benign.
+            # For phishing samples: want D->1, contributes -log(D(f))
+            # For benign samples:   want D->0, contributes -log(1-D(f))
             opt_D.zero_grad()
-            loss_D = bce(D(Xp_adv.detach()), pd_adv_lbl) + bce(D(Xb), pd_ben_lbl)
+            D_adv = D(Xp_adv.detach())
+            D_ben = D(Xb)
+            loss_D = (-torch.mean(pd_adv_lbl * torch.log(D_adv + EPS) + (1 - pd_adv_lbl) * torch.log(1 - D_adv + EPS))
+                      - torch.mean((1 - pd_ben_lbl) * torch.log(1 - D_ben + EPS) + pd_ben_lbl * torch.log(D_ben + EPS)))
             loss_D.backward()
             opt_D.step()
 
             # ── Train Generator (fool D → fool PD) ───────────────────────────
-            # Loss (eq 4): G wants D to classify output as benign (target=0)
+            # Exact Eq 4 (AlEroud 2020): L_G = -E[log D(G(m,s))]
+            # D(G) -> 1 means G fools D into thinking output is phishing-like
+            # but G is trained on phishing input, so D(G)->0 means evasion (looks benign)
+            # Correct interpretation: G wants D(G)->0 (adversarial looks benign to D)
+            # L_G = -E[log(1 - D(G))]  →  minimize so D(G)->0
             opt_G.zero_grad()
             noise_new    = torch.rand(len(Xp), GAN_NOISE_DIM, device=device)
             Xp_adv_new   = G(Xp, noise_new)
-            loss_G       = bce(D(Xp_adv_new), torch.zeros(len(Xp_adv_new), 1, device=device))
+            loss_G       = -torch.mean(torch.log(1 - D(Xp_adv_new) + EPS))
             loss_G.backward()
             opt_G.step()
 
@@ -476,11 +487,15 @@ if __name__ == "__main__":
 
         avg_g = ep_g / max(n_batches, 1)
         avg_d = ep_d / max(n_batches, 1)
-        gan_rows.append({"epoch": epoch, "loss_G": round(avg_g, 6), "loss_D": round(avg_d, 6)})
+        # Paper-style reward: E[log(1-D(G))] = -loss_G (negative, converges toward 0)
+        reward_G = -avg_g
+        gan_rows.append({"epoch": epoch, "loss_G": round(avg_g, 6), "loss_D": round(avg_d, 6),
+                         "reward_G_paper": round(reward_G, 6)})
 
         if epoch % 10 == 0 or epoch in (1, GAN_EPOCHS):
             log.info(f"  [GAN] Epoch {epoch:3d}/{GAN_EPOCHS}  "
-                     f"loss_G={avg_g:.4f}  loss_D={avg_d:.4f}")
+                     f"G_reward={reward_G:.4f}  D_loss={avg_d:.4f}  "
+                     f"(paper-style: G_reward negative, converges toward 0)")
 
     pd.DataFrame(gan_rows).to_csv(GAN_LOG, index=False)
     torch.save(G.state_dict(), GAN_GEN_PATH)
