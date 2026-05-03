@@ -72,7 +72,7 @@ STDOUT_LOG  = os.path.join(OUT_LOGS,  "stdout.log")
 os.makedirs(OUT_MODELS, exist_ok=True)
 os.makedirs(OUT_LOGS,   exist_ok=True)
 
-# ── Tee stdout → file ──────────────────────────────────────────────────────────
+# ── Tee stdout → file (only when run directly, not when imported) ──────────────
 class _Tee:
     def __init__(self, *files): self.files = files
     def write(self, obj):
@@ -80,20 +80,22 @@ class _Tee:
     def flush(self):
         for f in self.files: f.flush()
 
-_stdout_fh = open(STDOUT_LOG, "w", encoding="utf-8")
-sys.stdout  = _Tee(sys.__stdout__, _stdout_fh)
-
-# ── Logging ────────────────────────────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(message)s",
-    datefmt="%H:%M:%S",
-    handlers=[
-        logging.FileHandler(os.path.join(OUT_LOGS, "run.log"), encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
-    ],
-)
 log = logging.getLogger(__name__)
+
+
+def _setup_logging():
+    """Call this only from __main__ to avoid side-effects on import."""
+    _stdout_fh = open(STDOUT_LOG, "w", encoding="utf-8")
+    sys.stdout = _Tee(sys.__stdout__, _stdout_fh)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s  %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            logging.FileHandler(os.path.join(OUT_LOGS, "run.log"), encoding="utf-8"),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
 
 # ── Hyperparameters ────────────────────────────────────────────────────────────
 RANDOM_STATE  = 42
@@ -279,6 +281,7 @@ def compute_metrics(y_true, y_pred):
 # MAIN
 # ══════════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    _setup_logging()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info("=" * 80)
     log.info("Experiment 13 — CharCNN + FeatureMLP + Mahalanobis OOD (GAN Defense)")

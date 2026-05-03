@@ -1,0 +1,51 @@
+======================================================================
+Experiment 14 — Feature Importance Report
+Method: Permutation importance — shuffle each feature 5x, measure F1 drop
+Model : CharCNN + FeatureMLP dual-stream (Exp 13)
+======================================================================
+
+Top 20 features by F1 drop when shuffled:
+Rank  Feature                                  Group                           F1-drop     ±std
+---------------------------------------------------------------------------------------------
+1     path_depth                               Structural / URL-level           0.0114   0.0005
+2     shannon_entropy_query                    Structural / URL-level           0.0080   0.0003
+3     shannon_entropy_path                     Structural / URL-level           0.0045   0.0006
+4     is_common_tld                            TLD signals                      0.0032   0.0004
+5     query_length_normalized                  Structural / URL-level           0.0023   0.0001
+6     shannon_entropy_url                      Structural / URL-level           0.0015   0.0002
+7     special_char_ratio                       Basic (domain structure)         0.0011   0.0003
+8     is_suspicious_tld                        TLD signals                      0.0009   0.0004
+9     shortest_part                            Basic (domain structure)         0.0007   0.0001
+10    unique_char_ratio                        Entropy & complexity             0.0007   0.0002
+11    query_param_count                        Structural / URL-level           0.0005   0.0001
+12    path_length_normalized                   Structural / URL-level           0.0005   0.0001
+13    dash_count                               Basic (domain structure)         0.0004   0.0002
+14    is_country_tld                           TLD signals                      0.0004   0.0002
+15    has_fragment                             Structural / URL-level           0.0004   0.0001
+16    path_special_ratio                       Structural / URL-level           0.0004   0.0001
+17    url_length_normalized                    Structural / URL-level           0.0003   0.0002
+18    tld_length                               TLD signals                      0.0003   0.0002
+19    fragment_length_normalized               Structural / URL-level           0.0003   0.0001
+20    cse_keyword_count                        CSE pattern / brand              0.0003   0.0002
+
+
+Per-group summary (average F1-drop across all features in group):
+------------------------------------------------------------
+  Structural / URL-level               avg=0.0019  max=0.0114
+  TLD signals                          avg=0.0010  max=0.0032
+  Basic (domain structure)             avg=0.0002  max=0.0011
+  Entropy & complexity                 avg=0.0001  max=0.0007
+  CSE pattern / brand                  avg=0.0001  max=0.0003
+  Lexical patterns                     avg=-0.0000  max=0.0002
+
+
+Top 5 most important features:
+  1. path_depth  [Structural / URL-level]  F1-drop=0.0114
+  2. shannon_entropy_query  [Structural / URL-level]  F1-drop=0.0080
+  3. shannon_entropy_path  [Structural / URL-level]  F1-drop=0.0045
+  4. is_common_tld  [TLD signals]  F1-drop=0.0032
+  5. query_length_normalized  [Structural / URL-level]  F1-drop=0.0023
+
+
+Features with near-zero importance (35 total):
+  has_port, phishing_pattern_count, path_digit_ratio, has_consecutive_chars, bank_keyword, has_punycode, vowel_consonant_ratio, char_entropy, domain_length, path_slash_count, bigram_entropy, digit_ratio, consonant_count, unique_trigram_ratio, part_length_variance, query_special_ratio, consonant_clusters, has_nonstandard_port, dictionary_word_count, brand_keyword_count, uppercase_count, payment_keyword, secure_keyword, verify_keyword, longest_part, underscore_count, digit_count, has_www, has_subdomain, is_ip_address, dot_count, avg_part_length, has_unicode, num_subdomains, transition_entropy

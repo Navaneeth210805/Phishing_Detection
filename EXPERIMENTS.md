@@ -867,96 +867,52 @@ This is the planned Exp 10.
 
 ## Experiment 14 — Feature Importance Analysis (CharCNN + FeatureMLP)
 
-**What was ANALYSED**: BinaryURLPhishNet best model from Exp 2 (`binary_phishing/`).
-**Goal**: Identify which of the 67 structured URL features and which character-level signals contribute most to phishing detection.
-
-**Three complementary analyses**:
-
-**A. Permutation Importance (67 structured features)**
-- Shuffle each feature's values on test set, measure F1-Macro drop
-- N=5 repeats per feature to reduce variance
-- Features with largest F1-drop are most important for the model's predictions
-
-**B. Gradient × Input Saliency (67 structured features)**
-- Backpropagation through model w.r.t. phishing class logit
-- Attribution = mean |gradient × input| per feature over 5,000 test samples
-- Captures which features the model is most sensitive to, accounting for scale
-
-**C. CharCNN Analysis (character-level)**
-- C1: Character position importance — mean gradient magnitude at each of 256 URL positions (shows whether start/domain/path/query are most discriminative)
-- C2: Character vocabulary importance — L2 norm of each character's embedding vector (high norm = more expressive/discriminative character)
-- C3: Top n-gram patterns (k=3,5,7) in phishing-classified URLs — surfaces the actual character sequences CharCNN is most sensitive to
+**What was analysed**: Exp 13 dual-stream model (`binary_charcnn_mahalanobis_ood/`).
+**Goal**: Rank all 67 structured URL features by how much each one contributes to phishing detection.
+**Method**: `sklearn.inspection.permutation_importance` — shuffle each feature's values 5 times, measure drop in macro F1. Largest drop = most important. Uses `URLPhishNetEstimator(BaseEstimator)` wrapper so the dual-stream PyTorch model plugs directly into sklearn.
 
 | Setting | Value |
 |---------|-------|
-| Model loaded | `binary_phishing/models/model_best.pth` (Exp 2, F1=0.9867, Acc=99.75% on test) |
-| Analysis samples | Full 133,263 test set for permutation; 5,000 for gradients; 2,000 phishing for char |
+| Model loaded | `binary_charcnn_mahalanobis_ood/models/model_best.pth` (Exp 13, F1=0.9866) |
+| Analysis samples | 20,000 (stratified subset of 133,263 test samples) |
+| Repeats per feature | 5 (via `n_repeats=5, random_state=42`) |
 | Output | `feature_importance/` |
 | Script | `analyze_feature_importance.py` |
 
-**Results — Analysis A: Permutation Importance (top 10 features)**:
+**Results — Top 10 features by permutation importance**:
 
 | Rank | Feature | Group | F1-drop |
 |------|---------|-------|---------|
-| 1 | `path_length_normalized` | Structural | **0.0131** |
-| 2 | `shannon_entropy_path` | Structural | 0.0089 |
-| 3 | `shannon_entropy_query` | Structural | 0.0027 |
-| 4 | `is_common_tld` | TLD signals | 0.0025 |
-| 5 | `path_slash_count` | Structural | 0.0022 |
-| 6 | `is_suspicious_tld` | TLD signals | 0.0014 |
-| 7 | `dash_count` | Basic | 0.0009 |
-| 8 | `shannon_entropy_url` | Structural | 0.0008 |
-| 9 | `tld_length` | TLD signals | 0.0007 |
-| 10 | `special_char_ratio` | Basic | 0.0006 |
-
-**Results — Analysis B: Gradient × Input Saliency (top 10 features)**:
-
-| Rank | Feature | |g×x| | Direction |
-|------|---------|-------|-----------|
-| 1 | `path_length_normalized` | 0.0490 | +phishing (longer path → more phishing) |
-| 2 | `shannon_entropy_path` | 0.0413 | −benign (lower entropy → more phishing) |
-| 3 | `path_slash_count` | 0.0352 | +phishing (more slashes → more phishing) |
-| 4 | `is_common_tld` | 0.0326 | +phishing |
-| 5 | `shannon_entropy_url` | 0.0201 | −benign |
-| 6 | `shortest_part` | 0.0164 | −benign |
-| 7 | `special_char_ratio` | 0.0149 | −benign |
-| 8 | `is_country_tld` | 0.0148 | −benign |
-| 9 | `unique_char_ratio` | 0.0131 | −benign |
-| 10 | `has_subdomain` | 0.0122 | +phishing |
-
-**Results — Analysis C: CharCNN character-level signals**:
-
-- **Most important URL positions**: 9–28 (domain name region of a typical URL — after `http://` or `https://` prefix, this is where the brand/TLD characters are). Both methods confirm early URL characters carry the most weight.
-- **Highest embedding-norm characters**: `;` (9.58), `Y` (9.57), `1` (9.41), `b` (9.26), `K` (9.24), `?` (9.15), `t` (9.15) — punctuation and query-string delimiters like `;`, `?`, `#`, `=`, `%` stand out alongside common letter patterns.
-- **Top phishing n-grams (k=7)**: `https:/` (1746), `ttps://` (1744), `http://` (267), then `.gitbook` (138×), `.blogspot` (134×) — the model strongly identifies free hosting platform substrings as phishing signals.
+| 1 | `path_depth` | Structural / URL-level | **0.0114** |
+| 2 | `shannon_entropy_query` | Structural / URL-level | 0.0080 |
+| 3 | `shannon_entropy_path` | Structural / URL-level | 0.0045 |
+| 4 | `is_common_tld` | TLD signals | 0.0032 |
+| 5 | `query_length_normalized` | Structural / URL-level | 0.0023 |
+| 6 | `shannon_entropy_url` | Structural / URL-level | 0.0015 |
+| 7 | `special_char_ratio` | Basic (domain structure) | 0.0011 |
+| 8 | `is_suspicious_tld` | TLD signals | 0.0009 |
+| 9 | `shortest_part` | Basic (domain structure) | 0.0007 |
+| 10 | `unique_char_ratio` | Entropy & complexity | 0.0007 |
 
 **Feature group ranking (by avg permutation F1-drop)**:
 
 | Rank | Group | Avg F1-drop | Max F1-drop |
 |------|-------|------------|------------|
-| 1 | Structural / URL-level | 0.0019 | **0.0131** |
-| 2 | TLD signals | 0.0010 | 0.0025 |
-| 3 | Basic (domain structure) | 0.0002 | 0.0009 |
-| 4 | Entropy & complexity | 0.0001 | 0.0004 |
-| 5 | Lexical patterns | 0.0000 | 0.0003 |
-| 6 | CSE pattern / brand | 0.0000 | 0.0001 |
-
-**Stable features (appear in both top-5 permutation AND top-5 gradient)**: `path_length_normalized`, `shannon_entropy_path`, `path_slash_count`, `is_common_tld` — these 4 features are the most reliably important across both analysis methods.
+| 1 | Structural / URL-level | 0.0019 | **0.0114** |
+| 2 | TLD signals | 0.0010 | 0.0032 |
+| 3 | Basic (domain structure) | 0.0002 | 0.0011 |
+| 4 | Entropy & complexity | 0.0001 | 0.0007 |
+| 5 | CSE pattern / brand | 0.0001 | 0.0003 |
+| 6 | Lexical patterns | 0.0000 | 0.0002 |
 
 **Key takeaways**:
-1. **URL path features dominate**: `path_length_normalized` is the single most important structured feature — phishing URLs tend to have longer, more complex paths to bury the fake domain.
-2. **TLD signals matter**: `is_common_tld` and `is_suspicious_tld` are consistently in the top 6 — phishing sites disproportionately use uncommon or suspicious TLDs.
-3. **CSE/brand keyword features contribute near zero**: The 10 keyword features (Indian bank names, sector keywords) have essentially no permutation impact — the CharCNN captures brand-level patterns far more effectively from raw characters.
-4. **CharCNN focuses on the domain region** (positions 9–28) and is sensitive to free hosting platforms (gitbook, blogspot) — exactly the character-level patterns handcrafted features miss.
-5. **Path entropy is negatively associated with phishing** (lower entropy = more phishing) — crafted phishing paths often repeat predictable patterns rather than natural language words.
+1. **URL path/query structure dominates**: `path_depth`, `shannon_entropy_query`, and `shannon_entropy_path` are the top 3 — phishing URLs tend to have deeper paths and unusual query string patterns.
+2. **TLD signals matter**: `is_common_tld` and `is_suspicious_tld` consistently rank high — phishing sites disproportionately use uncommon or suspicious TLDs.
+3. **35 out of 67 features have near-zero importance**: Brand/CSE keyword features, most lexical patterns, and basic domain counts barely affect predictions — the CharCNN stream captures brand and character-level patterns far more effectively, making those handcrafted features redundant.
 
 **Saved artifacts**:
 - `feature_importance/logs/permutation_importance.csv` — all 67 features ranked by F1-drop
-- `feature_importance/logs/gradient_saliency.csv` — all 67 features ranked by |grad × input|
-- `feature_importance/logs/char_position_importance.csv` — 256 positions ranked by gradient magnitude
-- `feature_importance/logs/char_vocab_importance.csv` — 97 characters ranked by embedding norm
-- `feature_importance/logs/top_char_ngrams.txt` — top 25 n-grams per kernel size (k=3,5,7)
-- `feature_importance/logs/feature_importance_report.txt` — full consolidated report with key findings
+- `feature_importance/logs/feature_importance_report.txt` — full report with group summary
 
 ---
 
@@ -976,7 +932,7 @@ binary_mahalanobis_ood/                ← Exp 10 (Mahalanobis OOD detection —
 binary_replication_gan_test/           ← Exp 11 (cross-dataset validation — 100% GAN detection on different dataset)
 binary_gan_exact_paper/                ← Exp 12 (standalone exact-paper GAN D=P(legitimate) — 0% evasion, 100% Maha OOD)
 binary_charcnn_mahalanobis_ood/        ← Exp 13 (CharCNN+MLP dual-stream + Mahalanobis OOD — full model, GAN defense)
-feature_importance/                    ← Exp 14 (feature importance: permutation + gradient saliency + CharCNN analysis)
+feature_importance/                    ← Exp 14 (feature importance: permutation importance on 67 features, Exp 13 model)
 ```
 
 Each directory contains:

@@ -1,0 +1,257 @@
+11:52:00  ================================================================================
+11:52:00  Experiment 14 — Feature Importance Analysis (CharCNN + FeatureMLP)
+11:52:00  Device : cuda
+11:52:00  Output : C:\Users\nithi\Documents\Phishing_Detection\feature_importance
+11:52:00  ================================================================================
+11:52:00  
+[1/6] Loading trained BinaryURLPhishNet from Exp 2...
+11:52:01    Model loaded (epoch 39, F1=0.9867)
+11:52:01    Feature dim: 67  Expected: 67
+11:52:01  
+[2/6] Loading phishphresh test data...
+11:52:03    Test samples: 133,263  Benign: 73,581  Phishing: 59,682
+11:52:08    Baseline model: Acc=99.75%  F1=0.9975
+11:52:08  
+[3/6] Analysis A — Permutation importance (67 features)...
+11:52:08    Using 133,263 test samples, 5 repeats per feature
+11:52:14    Baseline F1=0.9975  Acc=99.75%
+12:25:54    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\permutation_importance.csv
+12:25:54    Top 10 features by permutation F1-drop:
+12:25:54      path_length_normalized                   F1-drop=0.0131 ± 0.0003
+12:25:54      shannon_entropy_path                     F1-drop=0.0089 ± 0.0001
+12:25:54      shannon_entropy_query                    F1-drop=0.0027 ± 0.0001
+12:25:54      is_common_tld                            F1-drop=0.0025 ± 0.0001
+12:25:54      path_slash_count                         F1-drop=0.0022 ± 0.0000
+12:25:54      is_suspicious_tld                        F1-drop=0.0014 ± 0.0001
+12:25:54      dash_count                               F1-drop=0.0009 ± 0.0000
+12:25:54      shannon_entropy_url                      F1-drop=0.0008 ± 0.0001
+12:25:54      tld_length                               F1-drop=0.0007 ± 0.0000
+12:25:54      special_char_ratio                       F1-drop=0.0006 ± 0.0000
+12:25:54  
+[4/6] Analysis B — Gradient × Input saliency (5000 samples)...
+12:25:55    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\gradient_saliency.csv
+12:25:55    Top 10 features by |grad × input|:
+12:25:55      path_length_normalized                   |g×x|=0.0490  signed=0.0175
+12:25:55      shannon_entropy_path                     |g×x|=0.0413  signed=-0.0120
+12:25:55      path_slash_count                         |g×x|=0.0352  signed=0.0238
+12:25:55      is_common_tld                            |g×x|=0.0326  signed=0.0017
+12:25:55      shannon_entropy_url                      |g×x|=0.0201  signed=-0.0091
+12:25:55      shortest_part                            |g×x|=0.0164  signed=-0.0041
+12:25:55      special_char_ratio                       |g×x|=0.0149  signed=-0.0045
+12:25:55      is_country_tld                           |g×x|=0.0148  signed=-0.0007
+12:25:55      unique_char_ratio                        |g×x|=0.0131  signed=-0.0081
+12:25:55      has_subdomain                            |g×x|=0.0122  signed=0.0025
+12:25:55  
+[5/6] Analysis C — CharCNN Analysis...
+12:25:55    C1: Position importance (up to 2000 phishing-predicted samples)...
+12:25:56    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\char_position_importance.csv
+12:25:56    Top 15 most important URL character positions:
+12:27:16  ================================================================================
+12:27:16  Experiment 14 — Feature Importance Analysis (CharCNN + FeatureMLP)
+12:27:16  Device : cuda
+12:27:16  Output : C:\Users\nithi\Documents\Phishing_Detection\feature_importance
+12:27:16  ================================================================================
+12:27:16  
+[1/6] Loading trained BinaryURLPhishNet from Exp 2...
+12:27:16    Model loaded (epoch 39, F1=0.9867)
+12:27:16    Feature dim: 67  Expected: 67
+12:27:16  
+[2/6] Loading phishphresh test data...
+12:27:18    Test samples: 133,263  Benign: 73,581  Phishing: 59,682
+12:27:24    Baseline model: Acc=99.75%  F1=0.9975
+12:27:24  
+[3/6] Analysis A — Permutation importance (67 features)...
+12:27:24    Checkpoint found — loading existing results from C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\permutation_importance.csv
+12:27:24    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\permutation_importance.csv
+12:27:24    Top 10 features by permutation F1-drop:
+12:27:24      path_length_normalized                   F1-drop=0.0131 ± 0.0003
+12:27:24      shannon_entropy_path                     F1-drop=0.0089 ± 0.0001
+12:27:24      shannon_entropy_query                    F1-drop=0.0027 ± 0.0001
+12:27:24      is_common_tld                            F1-drop=0.0025 ± 0.0001
+12:27:24      path_slash_count                         F1-drop=0.0022 ± 0.0000
+12:27:24      is_suspicious_tld                        F1-drop=0.0014 ± 0.0001
+12:27:24      dash_count                               F1-drop=0.0009 ± 0.0000
+12:27:24      shannon_entropy_url                      F1-drop=0.0008 ± 0.0001
+12:27:24      tld_length                               F1-drop=0.0007 ± 0.0000
+12:27:24      special_char_ratio                       F1-drop=0.0006 ± 0.0000
+12:27:24  
+[4/6] Analysis B — Gradient × Input saliency (5000 samples)...
+12:27:24    Checkpoint found — loading existing results from C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\gradient_saliency.csv
+12:27:24    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\gradient_saliency.csv
+12:27:24    Top 10 features by |grad × input|:
+12:27:24      path_length_normalized                   |g×x|=0.0490  signed=0.0175
+12:27:24      shannon_entropy_path                     |g×x|=0.0413  signed=-0.0120
+12:27:24      path_slash_count                         |g×x|=0.0352  signed=0.0238
+12:27:24      is_common_tld                            |g×x|=0.0326  signed=0.0017
+12:27:24      shannon_entropy_url                      |g×x|=0.0201  signed=-0.0091
+12:27:24      shortest_part                            |g×x|=0.0164  signed=-0.0041
+12:27:24      special_char_ratio                       |g×x|=0.0149  signed=-0.0045
+12:27:24      is_country_tld                           |g×x|=0.0148  signed=-0.0007
+12:27:24      unique_char_ratio                        |g×x|=0.0131  signed=-0.0081
+12:27:24      has_subdomain                            |g×x|=0.0122  signed=0.0025
+12:27:24  
+[5/6] Analysis C — CharCNN Analysis...
+12:27:24    C1: Position importance (up to 2000 phishing-predicted samples)...
+12:27:24    Checkpoint found — loading existing results from C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\char_position_importance.csv
+12:27:24    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\char_position_importance.csv
+12:27:24    Top 15 most important URL character positions:
+12:27:24      Position  12  mean_grad=0.00617  rank=1
+12:27:24      Position  15  mean_grad=0.00615  rank=2
+12:27:24      Position  16  mean_grad=0.00610  rank=3
+12:27:24      Position  14  mean_grad=0.00609  rank=4
+12:27:24      Position  17  mean_grad=0.00606  rank=5
+12:27:24      Position  11  mean_grad=0.00604  rank=6
+12:27:24      Position  13  mean_grad=0.00604  rank=7
+12:27:24      Position  18  mean_grad=0.00592  rank=8
+12:27:24      Position  23  mean_grad=0.00592  rank=9
+12:27:24      Position  19  mean_grad=0.00591  rank=10
+12:27:24      Position  21  mean_grad=0.00589  rank=11
+12:27:24      Position  22  mean_grad=0.00589  rank=12
+12:27:24      Position  10  mean_grad=0.00588  rank=13
+12:27:24      Position  24  mean_grad=0.00582  rank=14
+12:27:24      Position  20  mean_grad=0.00582  rank=15
+12:27:24    C2: Character vocabulary importance (embedding norms)...
+12:27:24    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\char_vocab_importance.csv
+12:27:24    Top 20 highest-norm characters:
+12:27:24      ';'  (idx=28, ascii=59)  norm=9.5828
+12:27:24      'Y'  (idx=58, ascii=89)  norm=9.5733
+12:27:24      '1'  (idx=18, ascii=49)  norm=9.4066
+12:27:24      'b'  (idx=67, ascii=98)  norm=9.2584
+12:27:24      'K'  (idx=44, ascii=75)  norm=9.2363
+12:27:24      '?'  (idx=32, ascii=63)  norm=9.1498
+12:27:24      't'  (idx=85, ascii=116)  norm=9.1471
+12:27:24      'k'  (idx=76, ascii=107)  norm=9.0492
+12:27:24      'y'  (idx=90, ascii=121)  norm=9.0031
+12:27:24      'T'  (idx=53, ascii=84)  norm=8.9963
+12:27:24      '#'  (idx=4, ascii=35)  norm=8.9863
+12:27:24      '['  (idx=60, ascii=91)  norm=8.9852
+12:27:24      'I'  (idx=42, ascii=73)  norm=8.9604
+12:27:24      '^'  (idx=63, ascii=94)  norm=8.9474
+12:27:24      'L'  (idx=45, ascii=76)  norm=8.9433
+12:27:24      'v'  (idx=87, ascii=118)  norm=8.9016
+12:27:24      '='  (idx=30, ascii=61)  norm=8.8967
+12:27:24      'q'  (idx=82, ascii=113)  norm=8.8899
+12:27:24      'O'  (idx=48, ascii=79)  norm=8.8671
+12:27:24      '%'  (idx=6, ascii=37)  norm=8.8600
+12:27:24    C3: Top character n-grams in phishing-classified URLs...
+12:27:24    Saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\top_char_ngrams.txt
+12:27:24    k=3 top patterns: 'htt', 'ttp', '://', 'tps', 'ps:'
+12:27:24    k=5 top patterns: 'https', 'ttps:', 'tps:/', 'ps://', '.com/'
+12:27:24    k=7 top patterns: 'https:/', 'ttps://', 'http://', 'tps://w', '://www.'
+12:27:24  
+[6/6] Writing feature importance report...
+12:27:24  Report saved -> C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\feature_importance_report.txt
+12:27:24  ================================================================================
+12:27:24  Experiment 14 complete.
+12:27:24  ================================================================================
+13:12:09  ======================================================================
+13:12:09  Experiment 14 — Feature Importance Analysis
+13:12:09  Model: Exp 13 (CharCNN + FeatureMLP + Mahalanobis OOD)
+13:12:09  Device: cuda
+13:12:09  ======================================================================
+13:12:09  [1/5] Loading phishphresh chunks...
+13:12:10    Total samples: 666,315  |  Features: 67  |  Benign: 367,904  Phishing: 298,411
+13:12:10    Test set: 133,263 samples
+13:12:10    Capped to 20,000 for analysis speed
+13:12:10  [2/5] Loading Exp 13 model...
+13:12:48  ======================================================================
+13:12:48  Experiment 14 — Feature Importance Analysis
+13:12:48  Model: Exp 13 (CharCNN + FeatureMLP + Mahalanobis OOD)
+13:12:48  Device: cuda
+13:12:48  ======================================================================
+13:12:48  [1/5] Loading phishphresh chunks...
+13:12:49    Total samples: 666,315  |  Features: 67  |  Benign: 367,904  Phishing: 298,411
+13:12:50    Test set: 133,263 samples
+13:12:50    Capped to 20,000 for analysis speed
+13:12:50  [2/5] Loading Exp 13 model...
+13:12:50    Loaded from epoch 26  val_f1=0.9866
+13:12:50  [3/5] Analysis A — sklearn.inspection.permutation_importance (n_repeats=5)...
+13:12:50    Checkpoint found — loading existing permutation_importance.csv
+13:12:50  [4/5] Analysis B — SHAP GradientExplainer on structured features...
+13:13:26  ======================================================================
+13:13:26  Experiment 14 — Feature Importance Analysis
+13:13:26  Model: Exp 13 (CharCNN + FeatureMLP + Mahalanobis OOD)
+13:13:26  Device: cuda
+13:13:26  ======================================================================
+13:13:26  [1/5] Loading phishphresh chunks...
+13:13:27    Total samples: 666,315  |  Features: 67  |  Benign: 367,904  Phishing: 298,411
+13:13:27    Test set: 133,263 samples
+13:13:27    Capped to 20,000 for analysis speed
+13:13:27  [2/5] Loading Exp 13 model...
+13:13:27    Loaded from epoch 26  val_f1=0.9866
+13:13:27  [3/5] Analysis A — sklearn.inspection.permutation_importance (n_repeats=5)...
+13:13:27    Checkpoint found — loading existing permutation_importance.csv
+13:13:27  [4/5] Analysis B — SHAP GradientExplainer on structured features...
+13:13:36  ======================================================================
+13:13:36  Experiment 14 — Feature Importance Analysis
+13:13:36  Model: Exp 13 (CharCNN + FeatureMLP + Mahalanobis OOD)
+13:13:36  Device: cuda
+13:13:36  ======================================================================
+13:13:36  [1/5] Loading phishphresh chunks...
+13:13:37    Total samples: 666,315  |  Features: 67  |  Benign: 367,904  Phishing: 298,411
+13:13:38    Test set: 133,263 samples
+13:13:38    Capped to 20,000 for analysis speed
+13:13:38  [2/5] Loading Exp 13 model...
+13:13:38    Loaded from epoch 26  val_f1=0.9866
+13:13:38  [3/5] Analysis A — sklearn.inspection.permutation_importance (n_repeats=5)...
+13:13:38    Checkpoint found — loading existing permutation_importance.csv
+13:13:38  [4/5] Analysis B — SHAP GradientExplainer on structured features...
+13:15:11  ============================================================
+13:15:11  Experiment 14 — Feature Importance (Permutation Method)
+13:15:11  Device: cuda
+13:15:11  ============================================================
+13:15:11  [1/4] Loading data...
+13:15:12    666,315 total  |  benign=367,904  phishing=298,411
+13:15:13    Using 20,000 test samples
+13:15:13  [2/4] Loading model...
+13:15:13    Epoch 26  F1=0.9866
+13:15:13  [3/4] Running sklearn.inspection.permutation_importance (n_repeats=5)...
+13:15:13    This shuffles each of the 67 features 5 times and measures F1 drop.
+13:15:27  ============================================================
+13:15:27  Experiment 14 — Feature Importance (Permutation Method)
+13:15:27  Device: cuda
+13:15:27  ============================================================
+13:15:27  [1/4] Loading data...
+13:15:28    666,315 total  |  benign=367,904  phishing=298,411
+13:15:29    Using 20,000 test samples
+13:15:29  [2/4] Loading model...
+13:15:29    Epoch 26  F1=0.9866
+13:15:29  [3/4] Running sklearn.inspection.permutation_importance (n_repeats=5)...
+13:15:29    This shuffles each of the 67 features 5 times and measures F1 drop.
+13:16:14  ============================================================
+13:16:14  Experiment 14 — Feature Importance (Permutation Method)
+13:16:14  Device: cuda
+13:16:14  ============================================================
+13:16:14  [1/4] Loading data...
+13:16:15    666,315 total  |  benign=367,904  phishing=298,411
+13:16:15    Using 20,000 test samples
+13:16:15  [2/4] Loading model...
+13:16:16    Epoch 26  F1=0.9866
+13:16:16  [3/4] Running permutation importance (n_repeats=5)...
+13:16:16    Shuffles each of the 67 features 5x and measures F1 drop.
+13:16:16    Baseline F1: 0.9867
+13:16:38    Progress: 10/67 features done
+13:17:00    Progress: 20/67 features done
+13:17:22    Progress: 30/67 features done
+13:17:44    Progress: 40/67 features done
+13:18:06    Progress: 50/67 features done
+13:18:29    Progress: 60/67 features done
+13:18:44    Saved: C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\permutation_importance.csv
+13:18:44  [4/4] Writing report...
+13:18:44    Saved: C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\feature_importance_report.txt
+13:18:44  Done.
+13:30:08  ============================================================
+13:30:08  Experiment 14 — Feature Importance (Permutation Method)
+13:30:08  Device: cuda
+13:30:08  ============================================================
+13:30:08  [1/4] Loading data...
+13:30:10    666,315 total  |  benign=367,904  phishing=298,411
+13:30:10    Using 20,000 test samples
+13:30:10  [2/4] Loading model...
+13:30:10    Epoch 26  F1=0.9866
+13:30:10  [3/4] Running sklearn.inspection.permutation_importance (n_repeats=5)...
+13:30:10    Shuffles each of the 67 features 5x and measures F1 drop.
+13:32:40    Saved: C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\permutation_importance.csv
+13:32:40  [4/4] Writing report...
+13:32:40    Saved: C:\Users\nithi\Documents\Phishing_Detection\feature_importance\logs\feature_importance_report.txt
+13:32:40  Done.
