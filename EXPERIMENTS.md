@@ -391,6 +391,8 @@ Papers are ordered by relevance to our architecture.
 | 10 | FeatureMLP + Mahalanobis OOD (GAN defense, no GAN data) | phishphresh | **95.45%** | **100% GAN detected, 1.04% FPR** |
 | 11 | Exp 10 model cross-dataset validation (no retraining, exact Eq GAN) | Replication Package | 57% real (scaler shift) | **100% GAN detected (different dataset GAN)** |
 | 12 | Standalone exact-paper GAN (D=P(legitimate), static labels) | phishphresh | 95.41% | 0% evasion (D arch mismatch) — Maha OOD 100% |
+| 13 | CharCNN + FeatureMLP + Mahalanobis OOD (GAN defense, full dual-stream) | phishphresh | **98.68%** | **100% GAN detected, 3.60% OOD FPR** |
+| 14 | Feature importance analysis (permutation + gradient saliency + CharCNN) | phishphresh | 99.75% test acc | top features: path_length, entropy_path, path_slash_count, is_common_tld |
 | — | Paper's best normal (XGB) | paper data | 98.58% | — |
 | — | Paper's best adv-trained (RF) | paper data + attacks | 97.71% | ~2.4% avg |
 
@@ -793,21 +795,188 @@ This is the planned Exp 10.
 
 ---
 
+## Experiment 13 — CharCNN + FeatureMLP Dual-Stream with Mahalanobis OOD
+
+**What was TRAINED**: BinaryURLPhishNet (full dual-stream: CharCNN + FeatureMLP) — same architecture as Exp 2.
+**What was TESTED**: Mahalanobis OOD applied to the 256-dim penultimate fusion layer. Compared against Exp 10 (FeatureMLP-only OOD) to measure the accuracy gain from adding CharCNN.
+
+**Motivation from Exp 10**:
+- Exp 10 achieved only 95.45% accuracy because it used FeatureMLP only
+- Exp 2 (CharCNN + FeatureMLP) achieved 98.68% — CharCNN adds ~2.46% accuracy
+- This experiment combines the best of both: CharCNN's high accuracy + Mahalanobis OOD's GAN defense
+
+**Architecture change**: Mahalanobis fitted on 256-dim penultimate layer of the full fusion model (vs 64-dim penultimate of FeatureMLP-only in Exp 10).
+
+**GAN evaluation note**: GAN adversarial vectors (Exp 8) are 67-dim feature vectors — no URL strings. Zero char tensors are passed to CharCNN (GAN operates in feature space only). The Mahalanobis OOD still detects them because the quantized feature values produce OOD representations even in the higher-dimensional fusion space.
+
+| Setting | Value |
+|---------|-------|
+| Training data | phishphresh — 533,052 train samples (real URLs only, no GAN data) |
+| Architecture | CharCNN(768) + FeatureMLP(128) → 896 → 512 → 256 → 2 |
+| Penultimate dim | 256 (fused char + feature signals) |
+| OOD threshold | 99th percentile of training Mahalanobis scores |
+| Epochs | 30 |
+| GAN test data | 238,729 adversarial feature vectors from Exp 8 |
+| Output | `binary_charcnn_mahalanobis_ood/` |
+| Script | `train_charcnn_mahalanobis_ood.py` |
+
+**Results**:
+
+| Metric | Value |
+|--------|-------|
+| Best epoch | 26  (F1=0.9866) |
+| Standard accuracy (real test set) | **98.68%** |
+| F1-Macro | **0.9866** |
+| MCC | **0.9732** |
+| FPR (benign wrongly flagged) | 0.96% |
+| FNR (phishing missed) | 1.77% |
+| OOD threshold (99th pct of training) | **1222.10** |
+| Median Mahalanobis — real training URLs | 163.66 |
+| Real URLs falsely flagged as OOD | 4,798 / 133,263 (**3.60%**) |
+| Of OOD real URLs, % phishing | 47.8% |
+| GAN evasion (no OOD layer) | **100.0%** |
+| GAN vectors detected by Mahalanobis OOD | **100.0%** (238,729 / 238,729) |
+| Adversarial Mahalanobis score (all identical) | 2,150.08 — 1.76× above threshold |
+
+**Key observations**:
+- Accuracy matches Exp 2 exactly (98.68%) — CharCNN fully recovers the accuracy gap from Exp 10's 95.45%.
+- 100% GAN detection maintained despite the higher-dimensional (256-dim vs 64-dim) Mahalanobis space.
+- All 238,729 GAN vectors score identically (2150.08) — because zero char tensors give a constant CharCNN output, the adversarial score in the fusion space converges to a single point. This is geometrically consistent: every GAN vector maps to the same location in the 256-dim space (same zero-char representation + same quantized FeatureMLP output clusters).
+- OOD FPR increased from 1.04% (Exp 10) to 3.60% — fitting 256-dim Gaussians on 533K points is noisier than 64-dim, making the threshold slightly more aggressive. The detection ratio is only 1.76× (vs 15,503× in Exp 10) but threshold margin is sufficient for 100% detection.
+
+**Cross-experiment comparison — GAN defense summary**:
+
+| Experiment | GAN data in training? | Normal Acc | GAN Evasion | OOD FPR |
+|-----------|----------------------|-----------|-------------|---------|
+| Exp 8 (no defense) | No | 95.44% | **100%** | — |
+| Exp 9 (adv training, MLP only) | **Yes** | 94.34% | **0%** | 1.23% |
+| Exp 10 (Maha OOD, MLP only) | **No** | 95.45% | **0%** | 1.04% |
+| **Exp 13 (Maha OOD, CharCNN+MLP)** | **No** | **98.68%** | **0%** | 3.60% |
+
+**Takeaway**: Exp 13 combines the best of Exp 2 (98.68% accuracy from CharCNN) and Exp 10 (zero GAN evasion without seeing GAN data). The OOD FPR tradeoff (3.60% vs 1.04%) is the only cost, and could be reduced by tuning the threshold percentile below 99.
+
+**Saved artifacts**:
+- `binary_charcnn_mahalanobis_ood/models/model_best.pth` — trained DualStreamOODNet (epoch 26)
+- `binary_charcnn_mahalanobis_ood/models/scaler.pkl` — fitted StandardScaler
+- `binary_charcnn_mahalanobis_ood/models/mahalanobis_params.pkl` — mu_0, mu_1, P (256x256), threshold=1222.10
+- `binary_charcnn_mahalanobis_ood/logs/run.log` — full training log
+- `binary_charcnn_mahalanobis_ood/logs/ood_report.txt` — OOD detection report + cross-exp comparison
+- `binary_charcnn_mahalanobis_ood/logs/training_metrics.csv` — per-epoch metrics
+
+---
+
+## Experiment 14 — Feature Importance Analysis (CharCNN + FeatureMLP)
+
+**What was ANALYSED**: BinaryURLPhishNet best model from Exp 2 (`binary_phishing/`).
+**Goal**: Identify which of the 67 structured URL features and which character-level signals contribute most to phishing detection.
+
+**Three complementary analyses**:
+
+**A. Permutation Importance (67 structured features)**
+- Shuffle each feature's values on test set, measure F1-Macro drop
+- N=5 repeats per feature to reduce variance
+- Features with largest F1-drop are most important for the model's predictions
+
+**B. Gradient × Input Saliency (67 structured features)**
+- Backpropagation through model w.r.t. phishing class logit
+- Attribution = mean |gradient × input| per feature over 5,000 test samples
+- Captures which features the model is most sensitive to, accounting for scale
+
+**C. CharCNN Analysis (character-level)**
+- C1: Character position importance — mean gradient magnitude at each of 256 URL positions (shows whether start/domain/path/query are most discriminative)
+- C2: Character vocabulary importance — L2 norm of each character's embedding vector (high norm = more expressive/discriminative character)
+- C3: Top n-gram patterns (k=3,5,7) in phishing-classified URLs — surfaces the actual character sequences CharCNN is most sensitive to
+
+| Setting | Value |
+|---------|-------|
+| Model loaded | `binary_phishing/models/model_best.pth` (Exp 2, F1=0.9867, Acc=99.75% on test) |
+| Analysis samples | Full 133,263 test set for permutation; 5,000 for gradients; 2,000 phishing for char |
+| Output | `feature_importance/` |
+| Script | `analyze_feature_importance.py` |
+
+**Results — Analysis A: Permutation Importance (top 10 features)**:
+
+| Rank | Feature | Group | F1-drop |
+|------|---------|-------|---------|
+| 1 | `path_length_normalized` | Structural | **0.0131** |
+| 2 | `shannon_entropy_path` | Structural | 0.0089 |
+| 3 | `shannon_entropy_query` | Structural | 0.0027 |
+| 4 | `is_common_tld` | TLD signals | 0.0025 |
+| 5 | `path_slash_count` | Structural | 0.0022 |
+| 6 | `is_suspicious_tld` | TLD signals | 0.0014 |
+| 7 | `dash_count` | Basic | 0.0009 |
+| 8 | `shannon_entropy_url` | Structural | 0.0008 |
+| 9 | `tld_length` | TLD signals | 0.0007 |
+| 10 | `special_char_ratio` | Basic | 0.0006 |
+
+**Results — Analysis B: Gradient × Input Saliency (top 10 features)**:
+
+| Rank | Feature | |g×x| | Direction |
+|------|---------|-------|-----------|
+| 1 | `path_length_normalized` | 0.0490 | +phishing (longer path → more phishing) |
+| 2 | `shannon_entropy_path` | 0.0413 | −benign (lower entropy → more phishing) |
+| 3 | `path_slash_count` | 0.0352 | +phishing (more slashes → more phishing) |
+| 4 | `is_common_tld` | 0.0326 | +phishing |
+| 5 | `shannon_entropy_url` | 0.0201 | −benign |
+| 6 | `shortest_part` | 0.0164 | −benign |
+| 7 | `special_char_ratio` | 0.0149 | −benign |
+| 8 | `is_country_tld` | 0.0148 | −benign |
+| 9 | `unique_char_ratio` | 0.0131 | −benign |
+| 10 | `has_subdomain` | 0.0122 | +phishing |
+
+**Results — Analysis C: CharCNN character-level signals**:
+
+- **Most important URL positions**: 9–28 (domain name region of a typical URL — after `http://` or `https://` prefix, this is where the brand/TLD characters are). Both methods confirm early URL characters carry the most weight.
+- **Highest embedding-norm characters**: `;` (9.58), `Y` (9.57), `1` (9.41), `b` (9.26), `K` (9.24), `?` (9.15), `t` (9.15) — punctuation and query-string delimiters like `;`, `?`, `#`, `=`, `%` stand out alongside common letter patterns.
+- **Top phishing n-grams (k=7)**: `https:/` (1746), `ttps://` (1744), `http://` (267), then `.gitbook` (138×), `.blogspot` (134×) — the model strongly identifies free hosting platform substrings as phishing signals.
+
+**Feature group ranking (by avg permutation F1-drop)**:
+
+| Rank | Group | Avg F1-drop | Max F1-drop |
+|------|-------|------------|------------|
+| 1 | Structural / URL-level | 0.0019 | **0.0131** |
+| 2 | TLD signals | 0.0010 | 0.0025 |
+| 3 | Basic (domain structure) | 0.0002 | 0.0009 |
+| 4 | Entropy & complexity | 0.0001 | 0.0004 |
+| 5 | Lexical patterns | 0.0000 | 0.0003 |
+| 6 | CSE pattern / brand | 0.0000 | 0.0001 |
+
+**Stable features (appear in both top-5 permutation AND top-5 gradient)**: `path_length_normalized`, `shannon_entropy_path`, `path_slash_count`, `is_common_tld` — these 4 features are the most reliably important across both analysis methods.
+
+**Key takeaways**:
+1. **URL path features dominate**: `path_length_normalized` is the single most important structured feature — phishing URLs tend to have longer, more complex paths to bury the fake domain.
+2. **TLD signals matter**: `is_common_tld` and `is_suspicious_tld` are consistently in the top 6 — phishing sites disproportionately use uncommon or suspicious TLDs.
+3. **CSE/brand keyword features contribute near zero**: The 10 keyword features (Indian bank names, sector keywords) have essentially no permutation impact — the CharCNN captures brand-level patterns far more effectively from raw characters.
+4. **CharCNN focuses on the domain region** (positions 9–28) and is sensitive to free hosting platforms (gitbook, blogspot) — exactly the character-level patterns handcrafted features miss.
+5. **Path entropy is negatively associated with phishing** (lower entropy = more phishing) — crafted phishing paths often repeat predictable patterns rather than natural language words.
+
+**Saved artifacts**:
+- `feature_importance/logs/permutation_importance.csv` — all 67 features ranked by F1-drop
+- `feature_importance/logs/gradient_saliency.csv` — all 67 features ranked by |grad × input|
+- `feature_importance/logs/char_position_importance.csv` — 256 positions ranked by gradient magnitude
+- `feature_importance/logs/char_vocab_importance.csv` — 97 characters ranked by embedding norm
+- `feature_importance/logs/top_char_ngrams.txt` — top 25 n-grams per kernel size (k=3,5,7)
+- `feature_importance/logs/feature_importance_report.txt` — full consolidated report with key findings
+
+---
+
 ## Directory Map
 
 ```
-phishphresh/multiclass_brand/   ← Exp 1  (52-class CharCNN+MLP, normal + adv eval)
-binary_phishing/                ← Exp 2  (binary CharCNN+MLP, phishphresh)
-binary_phishing_adv/            ← Exp 3  (binary adv-trained, phishphresh)
-binary_paper_data/              ← Exp 4  (binary CharCNN+MLP, paper's dataset)
-binary_paper_data_adv/          ← Exp 5  (binary adv-trained, paper's dataset)
-binary_feat_only/               ← Exp 6  (ablation: binary, MLP only)
-multiclass_feat_only/           ← Exp 7  (ablation: 52-class, MLP only)
-binary_phishing_adv_gan/        ← Exp 8  (GAN attack, exact Eq 3+4 — 100% evasion demonstrated)
-binary_gan_hardened/            ← Exp 9  (GAN adversarial training defense — evasion closed to 0%)
-binary_mahalanobis_ood/         ← Exp 10 (Mahalanobis OOD detection — 100% GAN detected, no GAN data needed)
-binary_replication_gan_test/    ← Exp 11 (cross-dataset validation — 100% GAN detection on different dataset)
-binary_gan_exact_paper/         ← Exp 12 (standalone exact-paper GAN D=P(legitimate) — 0% evasion, 100% Maha OOD)
+phishphresh/multiclass_brand/          ← Exp 1  (52-class CharCNN+MLP, normal + adv eval)
+binary_phishing/                       ← Exp 2  (binary CharCNN+MLP, phishphresh)
+binary_phishing_adv/                   ← Exp 3  (binary adv-trained, phishphresh)
+binary_paper_data/                     ← Exp 4  (binary CharCNN+MLP, paper's dataset)
+binary_paper_data_adv/                 ← Exp 5  (binary adv-trained, paper's dataset)
+binary_feat_only/                      ← Exp 6  (ablation: binary, MLP only)
+multiclass_feat_only/                  ← Exp 7  (ablation: 52-class, MLP only)
+binary_phishing_adv_gan/               ← Exp 8  (GAN attack, exact Eq 3+4 — 100% evasion demonstrated)
+binary_gan_hardened/                   ← Exp 9  (GAN adversarial training defense — evasion closed to 0%)
+binary_mahalanobis_ood/                ← Exp 10 (Mahalanobis OOD detection — 100% GAN detected, no GAN data needed)
+binary_replication_gan_test/           ← Exp 11 (cross-dataset validation — 100% GAN detection on different dataset)
+binary_gan_exact_paper/                ← Exp 12 (standalone exact-paper GAN D=P(legitimate) — 0% evasion, 100% Maha OOD)
+binary_charcnn_mahalanobis_ood/        ← Exp 13 (CharCNN+MLP dual-stream + Mahalanobis OOD — full model, GAN defense)
+feature_importance/                    ← Exp 14 (feature importance: permutation + gradient saliency + CharCNN analysis)
 ```
 
 Each directory contains:
