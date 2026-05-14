@@ -42,3 +42,5 @@ dom_unsup_subsample_combined/
 phishing_*/
 not-phishing_*/
 docs/
+report_figures_jpg
+training_visualizations
